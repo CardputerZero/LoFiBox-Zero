@@ -91,6 +91,13 @@ void WebUiServer::setLibraryEnrichProvider(app::LibraryEnrichProvider* provider)
     }
 }
 
+void WebUiServer::setTheme(const ui::UiTheme* theme) noexcept
+{
+    if (router_) {
+        router_->setTheme(theme);
+    }
+}
+
 bool WebUiServer::start()
 {
     if (running_.load(std::memory_order_acquire)) return true;

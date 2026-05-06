@@ -16,6 +16,7 @@
 #include "webui/webui_projection.h"
 #include "webui/webui_runtime_adapter.h"
 #include "webui/webui_static_assets.h"
+#include "webui/webui_theme_tokens.h"
 
 namespace lofibox::webui {
 namespace {
@@ -207,6 +208,11 @@ void WebUiHttpRouter::setLibraryEnrichProvider(app::LibraryEnrichProvider* provi
     enrich_provider_ = provider;
 }
 
+void WebUiHttpRouter::setTheme(const ui::UiTheme* theme) noexcept
+{
+    theme_ = theme;
+}
+
 std::string WebUiHttpRouter::handleRequest(std::string_view method, std::string_view path, std::string_view body)
 {
     // CORS preflight
@@ -221,7 +227,15 @@ std::string WebUiHttpRouter::handleRequest(std::string_view method, std::string_
         return out.str();
     }
 
-    // GET / or /index.html → serve the SPA
+    // GET /api/theme.css: theme CSS custom properties
+    if (method == "GET" && path == "/api/theme.css") {
+        std::string css = theme_ ? buildThemeCss(*theme_) : buildThemeCss(ui::defaultTheme());
+        std::string response = json::httpOk("text/css; charset=utf-8", css.size());
+        response += css;
+        return response;
+    }
+
+    // GET / or /index.html: serve the SPA
     if (method == "GET" && (path == "/" || path == "/index.html")) {
         const char* html = webUiIndexHtml();
         const std::size_t len = std::strlen(html);
@@ -230,7 +244,7 @@ std::string WebUiHttpRouter::handleRequest(std::string_view method, std::string_
         return response;
     }
 
-    // GET /api/runtime/snapshot → full state
+    // GET /api/runtime/snapshot: full state
     if (method == "GET" && path == "/api/runtime/snapshot") {
         adapter_.querySnapshot();
         std::string json = buildFullSnapshotJson(adapter_.lastSnapshot());
@@ -239,7 +253,7 @@ std::string WebUiHttpRouter::handleRequest(std::string_view method, std::string_
         return response;
     }
 
-    // POST /api/runtime/commands → execute a command
+    // POST /api/runtime/commands: execute a command
     if (method == "POST" && path == "/api/runtime/commands") {
         runtime::RuntimeCommand command{};
         if (!parseWebUiCommand(body, command)) {
@@ -256,9 +270,9 @@ std::string WebUiHttpRouter::handleRequest(std::string_view method, std::string_
         return response;
     }
 
-    // Library content endpoints — delegated to the injected provider interface
+    // Library content endpoints delegated to the injected provider interface.
     if (method == "GET" && library_provider_) {
-        // GET /api/artwork/<track_id> → image/png binary
+        // GET /api/artwork/<track_id>: image/png binary
         constexpr std::string_view kArtworkPrefix = "/api/artwork/";
         if (path.starts_with(kArtworkPrefix) && path.size() > kArtworkPrefix.size()) {
             int track_id = 0;
@@ -332,7 +346,7 @@ std::string WebUiHttpRouter::handleRequest(std::string_view method, std::string_
         }
     }
 
-    // Enrichment endpoints — delegated to the injected enrich provider
+    // Enrichment endpoints delegated to the injected enrich provider.
     if (method == "GET" && enrich_provider_) {
         constexpr std::string_view kArtistPrefix = "/api/library/artist/";
         constexpr std::string_view kAlbumPrefix  = "/api/library/album/";

@@ -223,6 +223,15 @@ RuntimeSnapshot RuntimeSnapshotAssembler::assemble(
         }
     }
 
+    result.plugins.loaded_plugin_ids = services.runtimeServices().plugins.loaded_plugin_ids;
+    result.plugins.loaded_count = static_cast<int>(result.plugins.loaded_plugin_ids.size());
+    result.plugins.selected_skin_id = services.runtimeServices().plugins.selected_skin_id;
+    result.plugins.warnings = services.runtimeServices().plugins.warnings;
+    result.plugins.version = version;
+    for (const auto& warning : result.plugins.warnings) {
+        result.diagnostics.warnings.push_back("plugin: " + warning);
+    }
+
     result.creator = creator.snapshot(version);
     return result;
 }
@@ -248,6 +257,7 @@ RuntimeSnapshot RuntimeSnapshotAssembler::assemble(
     result.sources.version = version;
     result.diagnostics.version = version;
     result.creator.version = version;
+    result.plugins.version = version;
     return result;
 }
 

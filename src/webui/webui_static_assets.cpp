@@ -282,7 +282,8 @@ button:active{transform:scale(.94);transition:transform .08s}
 @media(min-width:1024px){
   main{max-width:680px}
 }
-</style>
+  </style>
+<link rel="stylesheet" href="/api/theme.css">
 </head>
 <body>
 <header>

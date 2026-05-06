@@ -6,7 +6,6 @@
 #include <cctype>
 #include <cmath>
 
-#include "ui/ui_theme.h"
 #include "core/bitmap_font.h"
 #include "core/display_profile.h"
 
@@ -191,35 +190,37 @@ void drawFadedTextWindow(
 
 void drawTopBar(
     core::Canvas& canvas,
+    const UiTheme& theme,
     std::string_view title,
     bool show_back,
     std::string_view left_hint,
     std::string_view right_hint) noexcept
 {
     (void)show_back;
-    canvas.fillRect(0, 0, core::kDisplayWidth, kTopBarHeight, kChromeTopbar0);
-    canvas.fillRect(0, 12, core::kDisplayWidth, 8, kChromeTopbar1);
-    canvas.fillRect(0, kTopBarHeight - 1, core::kDisplayWidth, 1, kDivider);
+    const int bar_h = theme.spacing.top_bar_height;
+    canvas.fillRect(0, 0, core::kDisplayWidth, bar_h, theme.palette.chrome_topbar0);
+    canvas.fillRect(0, 12, core::kDisplayWidth, 7, theme.palette.chrome_topbar1);
+    canvas.fillRect(0, bar_h - 1, core::kDisplayWidth, 1, theme.palette.divider);
 
-    const int text_y = centeredTextY(0, kTopBarHeight, 1);
-    drawText(canvas, left_hint.empty() ? std::string_view{"F1:HELP"} : left_hint, 6, text_y, kTextSecondary, 1);
+    const int text_y = centeredTextY(0, bar_h, 1);
+    drawText(canvas, left_hint.empty() ? std::string_view{"F1:HELP"} : left_hint, 6, text_y, theme.palette.text_secondary, 1);
 
-    drawText(canvas, title, centeredX(upperText(title), 1), text_y, kTextPrimary, 1);
+    drawText(canvas, title, centeredX(upperText(title), 1), text_y, theme.palette.text_primary, 1);
 
     if (!right_hint.empty()) {
         const auto label = fitUpper(right_hint, 10);
         const int width = core::bitmap_font::measureText(label, 1);
-        drawText(canvas, label, std::max(206, core::kDisplayWidth - width - 6), text_y, kTextSecondary, 1);
+        drawText(canvas, label, std::max(206, core::kDisplayWidth - width - 6), text_y, theme.palette.text_secondary, 1);
     }
 }
 
-void drawListPageFrame(core::Canvas& canvas)
+void drawListPageFrame(core::Canvas& canvas, const UiTheme& theme)
 {
-    canvas.fillRect(0, 0, core::kDisplayWidth, core::kDisplayHeight, kBgRoot);
-    canvas.fillRect(0, kTopBarHeight, core::kDisplayWidth, core::kDisplayHeight - kTopBarHeight, kBgPanel0);
+    canvas.fillRect(0, 0, core::kDisplayWidth, core::kDisplayHeight, theme.palette.background);
+    canvas.fillRect(0, theme.spacing.top_bar_height, core::kDisplayWidth, core::kDisplayHeight - theme.spacing.top_bar_height, theme.palette.panel0);
 }
 
-void drawPageHelpModal(core::Canvas& canvas, std::string_view title, const std::vector<std::pair<std::string_view, std::string_view>>& rows)
+void drawPageHelpModal(core::Canvas& canvas, const UiTheme& theme, std::string_view title, const std::vector<std::pair<std::string_view, std::string_view>>& rows)
 {
     constexpr int x = 14;
     constexpr int y = 22;
@@ -239,16 +240,16 @@ void drawPageHelpModal(core::Canvas& canvas, std::string_view title, const std::
         canvas.setPixel(x + col, y + height - 4, bottom);
     }
 
-    drawText(canvas, title, centeredX(title, 1), y + 8, kTextPrimary, 1);
+    drawText(canvas, title, centeredX(title, 1), y + 8, theme.palette.text_primary, 1);
     if (rows.empty()) {
-        drawText(canvas, "NO SHORTCUTS", centeredX("NO SHORTCUTS", 1), y + 54, kTextMuted, 1);
+        drawText(canvas, "NO SHORTCUTS", centeredX("NO SHORTCUTS", 1), y + 54, theme.palette.text_muted, 1);
         return;
     }
 
     int row_y = y + 24;
     for (const auto& row : rows) {
-        drawText(canvas, fitUpper(row.first, 11), x + 16, row_y, kProgressStrong, 1);
-        drawText(canvas, fitUpper(row.second, 24), x + 90, row_y, kTextSecondary, 1);
+        drawText(canvas, fitUpper(row.first, 11), x + 16, row_y, theme.palette.progress_strong, 1);
+        drawText(canvas, fitUpper(row.second, 24), x + 90, row_y, theme.palette.text_secondary, 1);
         row_y += 11;
         if (row_y > y + height - 10) {
             break;
@@ -256,7 +257,7 @@ void drawPageHelpModal(core::Canvas& canvas, std::string_view title, const std::
     }
 }
 
-void drawGlassListFocus(core::Canvas& canvas, int x, int y, int width, int height)
+void drawGlassListFocus(core::Canvas& canvas, const UiTheme& /*theme*/, int x, int y, int width, int height)
 {
     if (width <= 0 || height <= 0) {
         return;
@@ -292,7 +293,7 @@ void drawGlassListFocus(core::Canvas& canvas, int x, int y, int width, int heigh
     }
 }
 
-void drawGlassScrollbar(core::Canvas& canvas, int x, int y, int width, int height, int thumb_y, int thumb_height)
+void drawGlassScrollbar(core::Canvas& canvas, const UiTheme& /*theme*/, int x, int y, int width, int height, int thumb_y, int thumb_height)
 {
     if (width <= 0 || height <= 0 || thumb_height <= 0) {
         return;
@@ -334,7 +335,7 @@ void drawGlassScrollbar(core::Canvas& canvas, int x, int y, int width, int heigh
     }
 }
 
-void drawFloatingProgressBar(core::Canvas& canvas, int x, int y, int width, int filled_width)
+void drawFloatingProgressBar(core::Canvas& canvas, const UiTheme& theme, int x, int y, int width, int filled_width)
 {
     const int clamped_fill = std::clamp(filled_width, 0, width);
     const auto draw_faded_bar = [&](int bar_x, int bar_y, int bar_w, int bar_h, core::Color color, std::uint8_t max_opacity) {
@@ -355,11 +356,11 @@ void drawFloatingProgressBar(core::Canvas& canvas, int x, int y, int width, int 
 
     draw_faded_bar(x - 3, y + 3, width + 6, 6, rgba(0, 0, 0), 90);
     draw_faded_bar(x, y, width, 5, rgba(42, 55, 70), 105);
-    draw_faded_bar(x, y - 1, clamped_fill, 7, kProgressStrong, 92);
+    draw_faded_bar(x, y - 1, clamped_fill, 7, theme.palette.progress_strong, 92);
     draw_faded_bar(x, y + 1, clamped_fill, 3, rgba(112, 202, 255), 175);
 }
 
-void drawSoftLyricFocus(core::Canvas& canvas, int x, int center_y, int width, int height)
+void drawSoftLyricFocus(core::Canvas& canvas, const UiTheme& /*theme*/, int x, int center_y, int width, int height)
 {
     const float half = std::max(1.0f, static_cast<float>(height) / 2.0f);
     const int top = center_y - (height / 2);
@@ -403,15 +404,15 @@ void drawLine(core::Canvas& canvas, int x0, int y0, int x1, int y1, core::Color 
     }
 }
 
-void drawPaginationDots(core::Canvas& canvas, int x, int y, int count, int selected)
+void drawPaginationDots(core::Canvas& canvas, const UiTheme& theme, int x, int y, int count, int selected)
 {
     constexpr int kDotSpacing = 10;
     for (int index = 0; index < count; ++index) {
         const bool active = index == selected;
-        const auto color = active ? kProgressStrong : kBgPanel2;
+        const auto color = active ? theme.palette.progress_strong : theme.palette.panel2;
         fillCircle(canvas, x + (index * kDotSpacing), y, 2, color);
         if (active) {
-            fillCircle(canvas, x + (index * kDotSpacing), y, 3, kProgress);
+            fillCircle(canvas, x + (index * kDotSpacing), y, 3, theme.palette.progress);
         }
     }
 }

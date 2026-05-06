@@ -19,6 +19,7 @@
 #include "core/canvas.h"
 #include "runtime/runtime_snapshot.h"
 #include "ui/ui_models.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::runtime {
 class RuntimeCommandClient;
@@ -34,6 +35,7 @@ class AppRuntimeContext final : public AppInputTarget,
 public:
     explicit AppRuntimeContext(std::vector<std::filesystem::path> media_roots,
                                ui::UiAssets assets,
+                               ui::UiTheme theme,
                                ::lofibox::application::AppServiceHost& app_host,
                                ::lofibox::runtime::RuntimeCommandClient& runtime_client,
                                std::vector<std::string> startup_uris = {});
@@ -89,6 +91,7 @@ public:
     void openSettingsPage() override;
     void showMainMenuPage() override;
     [[nodiscard]] AppPageModel pageModel() const override;
+    [[nodiscard]] const ui::UiTheme& theme() const noexcept override;
     void moveMainMenuSelection(int delta) override;
     void resetMainMenuSelection() noexcept override;
     void moveSelection(int delta) override;
@@ -161,6 +164,7 @@ private:
     void beginRemoteProfileFieldEdit(int field);
 
     AppRuntimeState state_{};
+    ui::UiTheme theme_{};
     ::lofibox::application::AppServiceHost& app_host_;
     ::lofibox::runtime::RuntimeCommandClient& runtime_client_;
 };

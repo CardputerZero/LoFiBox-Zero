@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "webui/webui_config.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::app {
 class LibraryEnrichProvider;
@@ -39,6 +40,7 @@ public:
     // Set optional providers for /api/library/* endpoints.
     void setLibraryQueryProvider(app::LibraryQueryProvider* provider) noexcept;
     void setLibraryEnrichProvider(app::LibraryEnrichProvider* provider) noexcept;
+    void setTheme(const ui::UiTheme* theme) noexcept;
 
     // Start the server. Returns false if socket setup fails.
     bool start();

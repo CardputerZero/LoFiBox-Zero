@@ -627,6 +627,10 @@ void appendSnapshot(std::ostringstream& out, const RuntimeSnapshot& snapshot)
     appendStringField(out, "creator_analysis_source", snapshot.creator.analysis_source);
     appendStringField(out, "creator_confidence", snapshot.creator.confidence);
     appendStringField(out, "creator_status_message", snapshot.creator.status_message);
+    out << ",\"plugins_loaded_count\":" << snapshot.plugins.loaded_count;
+    appendStringField(out, "plugins_selected_skin_id", snapshot.plugins.selected_skin_id);
+    appendStringArray(out, "plugins_loaded_plugin_ids", snapshot.plugins.loaded_plugin_ids);
+    appendStringArray(out, "plugins_warnings", snapshot.plugins.warnings);
 }
 
 RuntimeSnapshot parseSnapshot(std::string_view json)
@@ -777,6 +781,13 @@ RuntimeSnapshot parseSnapshot(std::string_view json)
     snapshot.creator.analysis_source = stringField(json, "creator_analysis_source").value_or(std::string{});
     snapshot.creator.confidence = stringField(json, "creator_confidence").value_or(std::string{});
     snapshot.creator.status_message = stringField(json, "creator_status_message").value_or("Creator analysis unavailable");
+    snapshot.plugins.loaded_count = numberField<int>(json, "plugins_loaded_count").value_or(0);
+    snapshot.plugins.selected_skin_id = stringField(json, "plugins_selected_skin_id").value_or(std::string{});
+    snapshot.plugins.loaded_plugin_ids = stringArrayField(json, "plugins_loaded_plugin_ids");
+    snapshot.plugins.warnings = stringArrayField(json, "plugins_warnings");
+    if (snapshot.plugins.loaded_count == 0 && !snapshot.plugins.loaded_plugin_ids.empty()) {
+        snapshot.plugins.loaded_count = static_cast<int>(snapshot.plugins.loaded_plugin_ids.size());
+    }
     return snapshot;
 }
 

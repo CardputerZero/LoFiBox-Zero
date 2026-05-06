@@ -6,6 +6,7 @@
 #include <string>
 
 #include "core/canvas.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::ui::pages {
 
@@ -15,6 +16,6 @@ struct EqualizerPageView {
     std::string preset_name{};
 };
 
-void renderEqualizerPage(core::Canvas& canvas, const EqualizerPageView& view);
+void renderEqualizerPage(core::Canvas& canvas, const EqualizerPageView& view, const UiTheme& theme);
 
 } // namespace lofibox::ui::pages

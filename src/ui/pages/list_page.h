@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "core/canvas.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::ui::pages {
 
@@ -21,6 +22,6 @@ struct ListPageView {
     bool help_open{false};
 };
 
-void renderListPage(core::Canvas& canvas, const ListPageView& view);
+void renderListPage(core::Canvas& canvas, const ListPageView& view, const UiTheme& theme);
 
 } // namespace lofibox::ui::pages

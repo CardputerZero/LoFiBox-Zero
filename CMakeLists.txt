@@ -120,6 +120,10 @@ add_library(lofibox_zero_core STATIC
     src/remote/common/stream_source_model.cpp
         src/playlist/playlist_parser.cpp
         src/plugins/plugin_manifest.cpp
+        src/plugins/plugin_discovery.cpp
+        src/plugins/skin_plugin_adapter.cpp
+        src/plugins/plugin_runtime.cpp
+        src/plugins/remote_plugin_adapter.cpp
     src/desktop/desktop_integration_boundary.cpp
     src/security/credential_policy.cpp
     src/ui/ui_primitives.cpp
@@ -526,6 +530,14 @@ if(BUILD_TESTING)
     target_link_libraries(lofibox_remote_browse_query_service_smoke PRIVATE lofibox_zero_core)
     add_test(NAME lofibox_remote_browse_query_service_smoke COMMAND lofibox_remote_browse_query_service_smoke)
 
+    add_executable(lofibox_plugin_discovery_smoke tests/plugin_discovery_smoke.cpp)
+    target_link_libraries(lofibox_plugin_discovery_smoke PRIVATE lofibox_zero_core)
+    add_test(NAME lofibox_plugin_discovery_smoke COMMAND lofibox_plugin_discovery_smoke)
+
+    add_executable(lofibox_plugin_runtime_smoke tests/plugin_runtime_smoke.cpp)
+    target_link_libraries(lofibox_plugin_runtime_smoke PRIVATE lofibox_zero_core)
+    add_test(NAME lofibox_plugin_runtime_smoke COMMAND lofibox_plugin_runtime_smoke)
+
     add_executable(lofibox_direct_cli_smoke tests/direct_cli_smoke.cpp)
     target_link_libraries(lofibox_direct_cli_smoke PRIVATE lofibox_zero_target_cli)
     add_test(NAME lofibox_direct_cli_smoke COMMAND lofibox_direct_cli_smoke)
@@ -765,5 +777,4 @@ if(BUILD_TESTING)
         add_test(NAME lofibox_webui_smoke COMMAND lofibox_webui_smoke)
     endif()
   endif()
-
 

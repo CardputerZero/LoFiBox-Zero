@@ -247,6 +247,7 @@ void test_projection_empty_snapshot()
     assert(json.find("\"eq\"") != std::string::npos);
     assert(json.find("\"library\"") != std::string::npos);
     assert(json.find("\"diagnostics\"") != std::string::npos);
+    assert(json.find("\"plugins\"") != std::string::npos);
     assert(json.find("\"version\"") != std::string::npos);
     std::cout << "  PASS: projection empty snapshot\n";
 }
@@ -276,12 +277,17 @@ void test_projection_diagnostics()
     snap.diagnostics.audio_ok = false;
     snap.diagnostics.warnings = {"low disk space"};
     snap.diagnostics.errors = {"audio device not found"};
+    snap.plugins.selected_skin_id = "io.github.vicliu624.lofibox.theme.classic-dark";
+    snap.plugins.loaded_plugin_ids = {"io.github.vicliu624.lofibox.theme.classic-dark"};
+    snap.plugins.loaded_count = 1;
 
     std::string json = lofibox::webui::buildDiagnosticsJson(snap);
     assert(json.find("\"runtime_ok\":true") != std::string::npos);
     assert(json.find("\"audio_ok\":false") != std::string::npos);
     assert(json.find("\"warnings\":[\"low disk space\"]") != std::string::npos);
     assert(json.find("\"errors\":[\"audio device not found\"]") != std::string::npos);
+    assert(json.find("\"plugins\"") != std::string::npos);
+    assert(json.find("\"selected_skin_id\":\"io.github.vicliu624.lofibox.theme.classic-dark\"") != std::string::npos);
     std::cout << "  PASS: projection diagnostics\n";
 }
 
@@ -318,7 +324,7 @@ void test_projection_event()
     assert(json.find("\"current_index\":2") != std::string::npos);
 
     // CRITICAL: buildEventJson writes playback fields directly inside
-    // "snapshot" — no "playback" wrapper key.  The frontend reads
+    // "snapshot" has no "playback" wrapper key. The frontend reads
     // msg.snapshot.status / msg.snapshot.current_track_id, NOT
     // msg.snapshot.playback.status.  A mismatch silently breaks all
     // event-driven UI updates.
@@ -505,6 +511,7 @@ void test_static_assets()
     assert(html_sv.find("<!DOCTYPE html>") != std::string_view::npos);
     assert(html_sv.find("<title>LoFiBox Zero</title>") != std::string_view::npos);
     assert(html_sv.find("LoFiBox Zero") != std::string_view::npos);
+    assert(html_sv.find("/api/theme.css") != std::string_view::npos);
 
     // CSS and JS are embedded in the HTML
     const char* css = lofibox::webui::webUiCss();
@@ -558,7 +565,7 @@ void test_runtime_adapter_basics()
     assert(result.accepted);
     assert(result.applied);
 
-    // Prime the diff baseline — first pollEvents always detects changes
+    // Prime the diff baseline; first pollEvents always detects changes
     // from the default-constructed previous snapshot.
     adapter.pollEvents();
 
@@ -599,6 +606,15 @@ void test_http_router_responses()
         assert(resp.find("200 OK") != std::string::npos);
         assert(resp.find("application/json") != std::string::npos);
         assert(resp.find("\"title\":\"Test Track\"") != std::string::npos);
+        assert(resp.find("\"plugins\"") != std::string::npos);
+    }
+
+    // GET /api/theme.css
+    {
+        std::string resp = router.handleRequest("GET", "/api/theme.css", "");
+        assert(resp.find("200 OK") != std::string::npos);
+        assert(resp.find("text/css") != std::string::npos);
+        assert(resp.find("--lb-bg") != std::string::npos);
     }
 
     // POST /api/runtime/commands (valid)

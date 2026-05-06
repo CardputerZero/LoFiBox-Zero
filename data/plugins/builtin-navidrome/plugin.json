@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "io.github.vicliu624.lofibox.remote.navidrome",
+  "name": "Navidrome Provider",
+  "version": "1.0.0",
+  "api_version": "1",
+  "kind": "external_helper",
+  "entry": {
+    "command": "python3",
+    "args": ["provider.py"],
+    "protocol": "lofibox-jsonrpc-1"
+  },
+  "capabilities": [
+    "remote.source",
+    "remote.browse",
+    "remote.search",
+    "remote.stream",
+    "remote.auth.profile"
+  ],
+  "runtime_dependencies": ["python3", "python3-requests"],
+  "permissions": ["network.client", "credential.read.profile"]
+}

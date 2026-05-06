@@ -209,6 +209,14 @@ void appendDiagnosticsFields(std::ostringstream& out, const runtime::Diagnostics
     separator(out); appendStringArray(out, "errors", d.errors);
 }
 
+void appendPluginFields(std::ostringstream& out, const runtime::PluginRuntimeSnapshot& p)
+{
+    appendInt(out, "loaded_count", p.loaded_count);
+    separator(out); appendString(out, "selected_skin_id", p.selected_skin_id);
+    separator(out); appendStringArray(out, "loaded_plugin_ids", p.loaded_plugin_ids);
+    separator(out); appendStringArray(out, "warnings", p.warnings);
+}
+
 } // namespace
 
 std::string buildNowPlayingJson(const runtime::RuntimeSnapshot& snapshot)
@@ -334,6 +342,10 @@ std::string buildDiagnosticsJson(const runtime::RuntimeSnapshot& snapshot)
     appendDiagnosticsFields(out, snapshot.diagnostics);
     closeObject(out);
 
+    separator(out); openObject(out, "plugins");
+    appendPluginFields(out, snapshot.plugins);
+    closeObject(out);
+
     separator(out); appendInt64(out, "version", static_cast<std::int64_t>(snapshot.version));
     out << '}';
     return out.str();
@@ -382,6 +394,10 @@ std::string buildFullSnapshotJson(const runtime::RuntimeSnapshot& snapshot)
 
     separator(out); openObject(out, "diagnostics");
     appendDiagnosticsFields(out, snapshot.diagnostics);
+    closeObject(out);
+
+    separator(out); openObject(out, "plugins");
+    appendPluginFields(out, snapshot.plugins);
     closeObject(out);
 
     separator(out); appendInt64(out, "version", static_cast<std::int64_t>(snapshot.version));

@@ -7,6 +7,10 @@ from remote.jellyfin import jellyfin_provider
 from remote.tooling.http_json import base_url
 
 
+def profile_schema() -> Dict[str, Any]:
+    return jellyfin_provider.profile_schema()
+
+
 def probe(profile: Dict[str, Any]) -> Dict[str, Any]:
     result = jellyfin_provider.probe(profile)
     if result.get("server_name") == "Jellyfin":

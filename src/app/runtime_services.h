@@ -15,6 +15,7 @@
 #include "app/remote_media_services.h"
 #include "cache/cache_manager.h"
 #include "core/canvas.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::audio::dsp {
 struct DspChainProfile;
@@ -219,12 +220,24 @@ struct CacheServices {
     std::shared_ptr<::lofibox::cache::CacheManager> cache_manager{};
 };
 
+struct UiServices {
+    std::shared_ptr<ui::UiTheme> theme{};
+};
+
+struct PluginServices {
+    std::vector<std::string> loaded_plugin_ids{};
+    std::vector<std::string> warnings{};
+    std::string selected_skin_id{};
+};
+
 struct RuntimeServiceRegistry {
     ConnectivityServices connectivity{};
     MetadataServices metadata{};
     PlaybackServices playback{};
     RemoteMediaServices remote{};
     CacheServices cache{};
+    UiServices ui{};
+    PluginServices plugins{};
 };
 
 using RuntimeServices = RuntimeServiceRegistry;

@@ -22,6 +22,7 @@ LoFiBoxApp::LoFiBoxApp(
       context_(std::make_unique<AppRuntimeContext>(
           std::move(media_roots),
           std::move(assets),
+          services_.ui.theme ? *services_.ui.theme : ui::defaultTheme(),
           app_host_,
           runtime_host_.client(),
           std::move(startup_uris)))

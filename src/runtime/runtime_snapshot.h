@@ -186,6 +186,14 @@ struct CreatorRuntimeSnapshot {
     std::uint64_t version{0};
 };
 
+struct PluginRuntimeSnapshot {
+    int loaded_count{0};
+    std::string selected_skin_id{};
+    std::vector<std::string> loaded_plugin_ids{};
+    std::vector<std::string> warnings{};
+    std::uint64_t version{0};
+};
+
 struct RuntimeSnapshot {
     PlaybackRuntimeSnapshot playback{};
     QueueRuntimeSnapshot queue{};
@@ -198,6 +206,7 @@ struct RuntimeSnapshot {
     SourceRuntimeSnapshot sources{};
     DiagnosticsRuntimeSnapshot diagnostics{};
     CreatorRuntimeSnapshot creator{};
+    PluginRuntimeSnapshot plugins{};
     std::uint64_t version{0};
 };
 

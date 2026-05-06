@@ -3,12 +3,20 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <mutex>
 #include <vector>
 
 #include "audio/dsp/dsp_chain.h"
 
 namespace lofibox::audio::dsp {
+
+struct ClipStats {
+    std::uint64_t over_ceiling_count{0};
+    std::uint64_t over_fullscale_count{0};
+    float peak_before{0.0f};
+    float peak_after{0.0f};
+};
 
 class RealtimeDspEngine {
 public:
@@ -40,6 +48,7 @@ public:
     void setProfile(DspChainProfile profile);
     [[nodiscard]] DspChainProfile profile() const;
     void processInterleaved(float* samples, std::size_t frame_count, int channels, double sample_rate_hz);
+    [[nodiscard]] ClipStats clipStats();
 
 private:
     void ensureState(int channels, double sample_rate_hz);
@@ -54,6 +63,8 @@ private:
     double smoothed_loudness_db_{0.0};
     double smoothed_replay_gain_db_{0.0};
     double smoothed_volume_db_{0.0};
+
+    ClipStats clip_stats_{};
 };
 
 } // namespace lofibox::audio::dsp

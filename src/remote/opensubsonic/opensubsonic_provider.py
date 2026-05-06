@@ -16,6 +16,16 @@ def params(profile: Dict[str, Any]) -> Dict[str, str]:
     return {"u": username, "t": token, "s": salt, "v": "1.16.1", "c": "LoFiBoxZero", "f": "json"}
 
 
+def profile_schema() -> Dict[str, Any]:
+    return {
+        "fields": [
+            {"name": "base_url", "type": "url", "required": True},
+            {"name": "username", "type": "string", "required": True},
+            {"name": "password", "type": "secret", "required": True},
+        ]
+    }
+
+
 def probe(profile: Dict[str, Any]) -> Dict[str, Any]:
     data = json_request(f"{base_url(profile)}/rest/ping.view?{urllib.parse.urlencode(params(profile))}")
     status = (((data or {}).get("subsonic-response") or {}).get("status"))

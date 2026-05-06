@@ -94,8 +94,16 @@ def _resolve(payload: Dict[str, Any]) -> Dict[str, Any]:
     return stream_response(profile, _provider(kind).resolve(profile, session, track))
 
 
+def _profile_schema(payload: Dict[str, Any]) -> Dict[str, Any]:
+    profile = payload["profile"]
+    kind = _normalized_kind(profile)
+    return _provider(kind).profile_schema()
+
+
 def run_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     action = payload["action"]
+    if action == "profile_schema":
+        return _profile_schema(payload)
     if action == "probe":
         return _probe(payload)
     if action == "search":

@@ -8,6 +8,7 @@
 
 #include "core/canvas.h"
 #include "ui/ui_models.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::ui::pages {
 
@@ -32,6 +33,6 @@ struct NowPlayingView {
     SpectrumFrame visualization{};
 };
 
-void renderNowPlayingPage(core::Canvas& canvas, const NowPlayingView& view);
+void renderNowPlayingPage(core::Canvas& canvas, const NowPlayingView& view, const UiTheme& theme);
 
 } // namespace lofibox::ui::pages

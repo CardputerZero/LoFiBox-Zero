@@ -100,10 +100,12 @@ std::string searchItemKey(const MediaItem& item)
 
 AppRuntimeContext::AppRuntimeContext(std::vector<std::filesystem::path> media_roots,
                                      ui::UiAssets assets,
+                                     ui::UiTheme theme,
                                      ::lofibox::application::AppServiceHost& app_host,
                                      ::lofibox::runtime::RuntimeCommandClient& runtime_client,
                                      std::vector<std::string> startup_uris)
     : state_{},
+      theme_(std::move(theme)),
       app_host_(app_host),
       runtime_client_(runtime_client)
 {
@@ -529,6 +531,11 @@ void AppRuntimeContext::showMainMenuPage()
 {
     closeHelp();
     showMainMenu();
+}
+
+const ui::UiTheme& AppRuntimeContext::theme() const noexcept
+{
+    return theme_;
 }
 
 AppPageModel AppRuntimeContext::pageModel() const

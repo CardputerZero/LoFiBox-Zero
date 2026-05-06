@@ -4,6 +4,7 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -20,10 +21,10 @@
 #if defined(LOFIBOX_HAVE_TUI)
 #include "tui/tui_app.h"
 #endif
-#include "webui/webui_config.h"
 #if defined(LOFIBOX_HAVE_WEBUI)
 #include "application/library_enrich_provider_adapter.h"
 #include "application/library_query_provider_adapter.h"
+#include "webui/webui_config.h"
 #include "webui/webui_runtime_adapter.h"
 #include "webui/webui_server.h"
 #endif
@@ -93,11 +94,10 @@ int main(int argc, char** argv)
             return *direct_cli_exit;
         }
 
-        lofibox::webui::WebUiConfig webui_config{};
-        lofibox::webui::parseWebUiFromArgs(argc, argv, webui_config);
-
         lofibox::app::AppStarter on_start;
 #if defined(LOFIBOX_HAVE_WEBUI)
+        lofibox::webui::WebUiConfig webui_config{};
+        lofibox::webui::parseWebUiFromArgs(argc, argv, webui_config);
         if (webui_config.enabled) {
             auto webui_ctx = std::make_shared<
                 std::pair<std::unique_ptr<lofibox::webui::WebUiRuntimeAdapter>,
@@ -106,7 +106,8 @@ int main(int argc, char** argv)
                 services.metadata.artwork_provider,
                 lofibox::platform::host::runtime_paths::appCacheDir());
             auto enrich = std::make_shared<lofibox::application::LibraryEnrichProviderAdapter>(services.cache.cache_manager);
-            on_start = [cfg = std::move(webui_config), webui_ctx, lib_provider, enrich]
+            auto active_theme = services.ui.theme;
+            on_start = [cfg = std::move(webui_config), webui_ctx, lib_provider, enrich, active_theme]
                        (lofibox::runtime::RuntimeCommandClient& client,
                         const ::lofibox::application::AppServiceRegistry& registry) mutable {
                 lib_provider->bind(registry.libraryQueries());
@@ -114,6 +115,7 @@ int main(int argc, char** argv)
                 webui_ctx->second = std::make_unique<lofibox::webui::WebUiServer>(std::move(cfg), *webui_ctx->first);
                 webui_ctx->second->setLibraryQueryProvider(lib_provider.get());
                 webui_ctx->second->setLibraryEnrichProvider(enrich.get());
+                webui_ctx->second->setTheme(active_theme.get());
                 webui_ctx->second->start();
             };
         }

@@ -210,8 +210,8 @@ void RealtimeDspEngine::processInterleaved(float* samples, std::size_t frame_cou
     smoothed_replay_gain_db_ = smooth(smoothed_replay_gain_db_, profile_.replay_gain.enabled ? profile_.replay_gain.gain_db : 0.0);
     smoothed_volume_db_ = smooth(smoothed_volume_db_, profile_.volume_db);
     const double scalar_gain = dbToLinear(smoothed_preamp_db_ + smoothed_loudness_db_ + smoothed_replay_gain_db_ + smoothed_volume_db_);
-    const bool limiter_enabled = profile_.limiter.enabled || profile_.eq.limiter_enabled;
-    const double limiter_ceiling = dbToLinear(profile_.limiter.enabled ? profile_.limiter.ceiling_db : profile_.eq.limiter_ceiling_db);
+    const double limiter_ceiling = dbToLinear(
+        profile_.limiter.enabled ? profile_.limiter.ceiling_db : profile_.eq.limiter_ceiling_db);
     const auto high_pass = profile_.eq.high_pass_hz ? std::optional<BiquadCoefficients>{makeHighPass(sample_rate_hz, *profile_.eq.high_pass_hz)} : std::nullopt;
     const auto low_pass = profile_.eq.low_pass_hz ? std::optional<BiquadCoefficients>{makeLowPass(sample_rate_hz, *profile_.eq.low_pass_hz)} : std::nullopt;
 
@@ -242,13 +242,33 @@ void RealtimeDspEngine::processInterleaved(float* samples, std::size_t frame_cou
                     value *= 1.0 + balance;
                 }
             }
-            if (limiter_enabled) {
-                value = std::clamp(value, -limiter_ceiling, limiter_ceiling);
+            const double abs_value = std::fabs(value);
+            if (abs_value > static_cast<double>(clip_stats_.peak_before)) {
+                clip_stats_.peak_before = static_cast<float>(abs_value);
             }
+            if (abs_value > limiter_ceiling) {
+                ++clip_stats_.over_ceiling_count;
+            }
+            if (abs_value > 1.0) {
+                ++clip_stats_.over_fullscale_count;
+            }
+            const double clamped = std::clamp(value, -1.0, 1.0);
             samples[(frame * static_cast<std::size_t>(channels)) + static_cast<std::size_t>(channel_index)] =
-                static_cast<float>(std::clamp(value, -1.0, 1.0));
+                static_cast<float>(clamped);
+            const double abs_clamped = std::fabs(clamped);
+            if (abs_clamped > static_cast<double>(clip_stats_.peak_after)) {
+                clip_stats_.peak_after = static_cast<float>(abs_clamped);
+            }
         }
     }
+}
+
+ClipStats RealtimeDspEngine::clipStats()
+{
+    std::lock_guard lock(mutex_);
+    ClipStats result = clip_stats_;
+    clip_stats_ = {};
+    return result;
 }
 
 } // namespace lofibox::audio::dsp

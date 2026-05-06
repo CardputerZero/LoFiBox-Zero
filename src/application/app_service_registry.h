@@ -34,6 +34,7 @@ public:
     [[nodiscard]] CacheCommandService cacheCommands() const noexcept;
     [[nodiscard]] RuntimeDiagnosticService diagnostics() const noexcept;
     [[nodiscard]] app::LibraryController& libraryController() noexcept { return controllers_.library; }
+    [[nodiscard]] const app::RuntimeServices& runtimeServices() const noexcept { return runtime_services_; }
 
 private:
     app::AppControllerSet& controllers_;

@@ -14,7 +14,6 @@
 #include "ui/pages/main_menu_page.h"
 #include "ui/pages/now_playing_page.h"
 #include "ui/ui_primitives.h"
-#include "ui/ui_theme.h"
 
 namespace lofibox::app {
 namespace {
@@ -150,13 +149,15 @@ void renderHelpIfOpen(core::Canvas& canvas, const AppRenderTarget& target)
     if (!target.helpOpen() || target.helpPage() == AppPage::Boot) {
         return;
     }
+    const auto& theme = target.theme();
     const auto title = target.helpPage() == AppPage::MainMenu ? std::string_view{"MENU SHORTCUTS"} : std::string_view{"SHORTCUTS"};
-    ui::drawPageHelpModal(canvas, title, helpRowsForPage(target.helpPage()));
+    ui::drawPageHelpModal(canvas, theme, title, helpRowsForPage(target.helpPage()));
 }
 
 void renderBootPage(core::Canvas& canvas, const AppRenderTarget& target)
 {
-    canvas.fillRect(0, 0, core::kDisplayWidth, core::kDisplayHeight, ui::kBgRoot);
+    const auto& theme = target.theme();
+    canvas.fillRect(0, 0, core::kDisplayWidth, core::kDisplayHeight, theme.palette.background);
     const std::string status = target.libraryState() == LibraryIndexState::Uninitialized
         ? "STARTING"
         : (target.libraryState() == LibraryIndexState::Loading ? "LOADING LIBRARY" : "LIBRARY READY");
@@ -169,22 +170,25 @@ void renderBootPage(core::Canvas& canvas, const AppRenderTarget& target)
         constexpr int y = 18;
         ui::blitScaledCanvas(canvas, *target.assets().logo, x, y, size, size, opacity);
     } else {
-        ui::drawText(canvas, "LOFIBOX ZERO", ui::centeredX("LOFIBOX ZERO", 2), 38, ui::kTextPrimary, 2);
+        ui::drawText(canvas, "LOFIBOX ZERO", ui::centeredX("LOFIBOX ZERO", 2), 38, theme.palette.text_primary, 2);
     }
-    ui::drawText(canvas, status, ui::centeredX(status, 1), 144, ui::kTextSecondary, 1);
+    ui::drawText(canvas, status, ui::centeredX(status, 1), 144, theme.palette.text_secondary, 1);
 }
 
 void renderMainMenu(core::Canvas& canvas, const AppRenderTarget& target)
 {
+    const auto& theme = target.theme();
     ui_pages::renderMainMenuPage(
         canvas,
-        buildMainMenuProjection(target));
+        buildMainMenuProjection(target),
+        theme);
     renderHelpIfOpen(canvas, target);
 }
 
 void renderNowPlaying(core::Canvas& canvas, const AppRenderTarget& target)
 {
-    ui::drawListPageFrame(canvas);
+    const auto& theme = target.theme();
+    ui::drawListPageFrame(canvas, theme);
     const auto& playback = target.playbackSession();
     std::string source_label = playback.current_stream_source;
     if (playback.current_track_id) {
@@ -194,28 +198,33 @@ void renderNowPlaying(core::Canvas& canvas, const AppRenderTarget& target)
             source_label.clear();
         }
     }
-    ui::drawTopBar(canvas, target.pageModel().title, true, {}, source_label);
+    ui::drawTopBar(canvas, theme, target.pageModel().title, true, {}, source_label);
     ui_pages::renderNowPlayingPage(
         canvas,
-        buildNowPlayingProjection(target));
+        buildNowPlayingProjection(target),
+        theme);
     renderHelpIfOpen(canvas, target);
 }
 
 void renderLyrics(core::Canvas& canvas, const AppRenderTarget& target)
 {
-    ui::drawListPageFrame(canvas);
-    ui::drawTopBar(canvas, target.pageModel().title, true);
+    const auto& theme = target.theme();
+    ui::drawListPageFrame(canvas, theme);
+    ui::drawTopBar(canvas, theme, target.pageModel().title, true);
     ui_pages::renderLyricsPage(
         canvas,
-        buildLyricsProjection(target));
+        buildLyricsProjection(target),
+        theme);
     renderHelpIfOpen(canvas, target);
 }
 
 void renderList(core::Canvas& canvas, const AppRenderTarget& target)
 {
+    const auto& theme = target.theme();
     ui_pages::renderListPage(
         canvas,
-        buildListProjection(target));
+        buildListProjection(target),
+        theme);
     renderHelpIfOpen(canvas, target);
 }
 
@@ -223,7 +232,8 @@ void renderList(core::Canvas& canvas, const AppRenderTarget& target)
 
 void renderApp(core::Canvas& canvas, const AppRenderTarget& target)
 {
-    canvas.clear(ui::kBgRoot);
+    const auto& theme = target.theme();
+    canvas.clear(theme.palette.background);
 
     switch (target.currentPage()) {
     case AppPage::Boot:
@@ -239,11 +249,11 @@ void renderApp(core::Canvas& canvas, const AppRenderTarget& target)
         renderLyrics(canvas, target);
         return;
     case AppPage::Equalizer:
-        ui_pages::renderEqualizerPage(canvas, buildEqualizerProjection(target));
+        ui_pages::renderEqualizerPage(canvas, buildEqualizerProjection(target), theme);
         renderHelpIfOpen(canvas, target);
         return;
     case AppPage::About:
-        ui_pages::renderAboutPage(canvas, buildAboutProjection(target));
+        ui_pages::renderAboutPage(canvas, buildAboutProjection(target), theme);
         renderHelpIfOpen(canvas, target);
         return;
     case AppPage::MusicIndex:

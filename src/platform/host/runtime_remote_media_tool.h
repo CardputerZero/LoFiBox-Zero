@@ -3,12 +3,16 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "app/remote_media_services.h"
+#include "plugins/plugin_manifest.h"
+#include "plugins/plugin_runtime.h"
 
 namespace lofibox::platform::host::runtime_detail {
 namespace fs = std::filesystem;
@@ -42,7 +46,16 @@ public:
         const app::RemoteTrack& track) const;
 
 private:
+    [[nodiscard]] const plugins::PluginManifest* pluginForProfile(const app::RemoteServerProfile& profile) const;
+    [[nodiscard]] plugins::PluginRuntime* runtimeForPlugin(const plugins::PluginManifest& manifest) const;
+    [[nodiscard]] std::optional<std::string> callPlugin(
+        const app::RemoteServerProfile& profile,
+        std::string_view method,
+        std::string_view params_json) const;
+
     std::optional<fs::path> python_path_{};
+    std::vector<plugins::PluginManifest> remote_plugins_{};
+    mutable std::unordered_map<std::string, std::unique_ptr<plugins::PluginRuntime>> runtimes_{};
 };
 
 } // namespace lofibox::platform::host::runtime_detail
