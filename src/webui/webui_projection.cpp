@@ -176,6 +176,15 @@ void appendLibraryFields(std::ostringstream& out, const runtime::LibraryRuntimeS
     separator(out); appendInt(out, "artist_count", lib.artist_count);
     separator(out); appendInt(out, "genre_count", lib.genre_count);
     separator(out); appendString(out, "status", lib.status);
+    separator(out); appendString(out, "scan_phase", lib.scan_phase);
+    separator(out); appendString(out, "scan_message", lib.scan_message);
+    separator(out); appendString(out, "scan_current_path", lib.scan_current_path);
+    separator(out); appendInt(out, "scan_roots_total", lib.scan_roots_total);
+    separator(out); appendInt(out, "scan_roots_scanned", lib.scan_roots_scanned);
+    separator(out); appendInt(out, "scan_files_discovered", lib.scan_files_discovered);
+    separator(out); appendInt(out, "scan_files_total", lib.scan_files_total);
+    separator(out); appendInt(out, "scan_files_processed", lib.scan_files_processed);
+    separator(out); appendInt(out, "scan_tracks_indexed", lib.scan_tracks_indexed);
 }
 
 void appendSourcesFields(std::ostringstream& out, const runtime::SourceRuntimeSnapshot& src)
@@ -448,6 +457,10 @@ std::string buildEventJson(const runtime::RuntimeEvent& event)
         closeArray(out);
         closeObject(out);
     }
+
+    separator(out); openObject(out, "library");
+    appendLibraryFields(out, event.snapshot.library);
+    closeObject(out);
 
     separator(out); appendInt64(out, "stream_version", static_cast<std::int64_t>(event.version));
     separator(out); appendDouble(out, "elapsed_seconds", event.elapsed_seconds);

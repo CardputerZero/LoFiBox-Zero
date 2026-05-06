@@ -138,6 +138,15 @@ struct LibraryRuntimeSnapshot {
     int artist_count{0};
     int genre_count{0};
     std::string status{"UNINITIALIZED"};
+    std::string scan_phase{"IDLE"};
+    std::string scan_message{};
+    std::string scan_current_path{};
+    int scan_roots_total{0};
+    int scan_roots_scanned{0};
+    int scan_files_discovered{0};
+    int scan_files_total{0};
+    int scan_files_processed{0};
+    int scan_tracks_indexed{0};
     std::uint64_t version{0};
 };
 

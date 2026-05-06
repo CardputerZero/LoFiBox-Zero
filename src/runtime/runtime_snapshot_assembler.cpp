@@ -189,6 +189,7 @@ RuntimeSnapshot RuntimeSnapshotAssembler::assemble(
     const auto library_queries = services.libraryQueries();
     const auto& library = library_queries.model();
     const auto library_state = library_queries.state();
+    const auto library_scan = library_queries.scanProgress();
     result.library.ready = library_state == app::LibraryIndexState::Ready || library_state == app::LibraryIndexState::Degraded;
     result.library.degraded = library_state == app::LibraryIndexState::Degraded || library.degraded;
     result.library.track_count = static_cast<int>(library.tracks.size());
@@ -196,6 +197,15 @@ RuntimeSnapshot RuntimeSnapshotAssembler::assemble(
     result.library.artist_count = static_cast<int>(library.artists.size());
     result.library.genre_count = static_cast<int>(library.genres.size());
     result.library.status = libraryStateLabel(library_state);
+    result.library.scan_phase = std::string{app::libraryScanPhaseLabel(library_scan.phase)};
+    result.library.scan_message = library_scan.message;
+    result.library.scan_current_path = library_scan.current_path;
+    result.library.scan_roots_total = library_scan.roots_total;
+    result.library.scan_roots_scanned = library_scan.roots_scanned;
+    result.library.scan_files_discovered = library_scan.files_discovered;
+    result.library.scan_files_total = library_scan.files_total;
+    result.library.scan_files_processed = library_scan.files_processed;
+    result.library.scan_tracks_indexed = library_scan.tracks_indexed;
     result.library.version = version;
 
     result.sources.active_profile_id = result.remote.profile_id;

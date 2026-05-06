@@ -594,6 +594,15 @@ void appendSnapshot(std::ostringstream& out, const RuntimeSnapshot& snapshot)
         << ",\"library_artist_count\":" << snapshot.library.artist_count
         << ",\"library_genre_count\":" << snapshot.library.genre_count;
     appendStringField(out, "library_status", snapshot.library.status);
+    appendStringField(out, "library_scan_phase", snapshot.library.scan_phase);
+    appendStringField(out, "library_scan_message", snapshot.library.scan_message);
+    appendStringField(out, "library_scan_current_path", snapshot.library.scan_current_path);
+    out << ",\"library_scan_roots_total\":" << snapshot.library.scan_roots_total
+        << ",\"library_scan_roots_scanned\":" << snapshot.library.scan_roots_scanned
+        << ",\"library_scan_files_discovered\":" << snapshot.library.scan_files_discovered
+        << ",\"library_scan_files_total\":" << snapshot.library.scan_files_total
+        << ",\"library_scan_files_processed\":" << snapshot.library.scan_files_processed
+        << ",\"library_scan_tracks_indexed\":" << snapshot.library.scan_tracks_indexed;
     out << ",\"source_configured_count\":" << snapshot.sources.configured_count;
     appendStringField(out, "source_active_profile_id", snapshot.sources.active_profile_id);
     appendStringField(out, "source_active_label", snapshot.sources.active_source_label);
@@ -745,6 +754,15 @@ RuntimeSnapshot parseSnapshot(std::string_view json)
     snapshot.library.artist_count = numberField<int>(json, "library_artist_count").value_or(0);
     snapshot.library.genre_count = numberField<int>(json, "library_genre_count").value_or(0);
     snapshot.library.status = stringField(json, "library_status").value_or("UNINITIALIZED");
+    snapshot.library.scan_phase = stringField(json, "library_scan_phase").value_or("IDLE");
+    snapshot.library.scan_message = stringField(json, "library_scan_message").value_or(std::string{});
+    snapshot.library.scan_current_path = stringField(json, "library_scan_current_path").value_or(std::string{});
+    snapshot.library.scan_roots_total = numberField<int>(json, "library_scan_roots_total").value_or(0);
+    snapshot.library.scan_roots_scanned = numberField<int>(json, "library_scan_roots_scanned").value_or(0);
+    snapshot.library.scan_files_discovered = numberField<int>(json, "library_scan_files_discovered").value_or(0);
+    snapshot.library.scan_files_total = numberField<int>(json, "library_scan_files_total").value_or(0);
+    snapshot.library.scan_files_processed = numberField<int>(json, "library_scan_files_processed").value_or(0);
+    snapshot.library.scan_tracks_indexed = numberField<int>(json, "library_scan_tracks_indexed").value_or(0);
     snapshot.sources.configured_count = numberField<int>(json, "source_configured_count").value_or(0);
     snapshot.sources.active_profile_id = stringField(json, "source_active_profile_id").value_or(std::string{});
     snapshot.sources.active_source_label = stringField(json, "source_active_label").value_or(std::string{});

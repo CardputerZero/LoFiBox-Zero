@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 
 #include "app/app_projection_builder.h"
 #include "core/display_profile.h"
@@ -154,13 +155,95 @@ void renderHelpIfOpen(core::Canvas& canvas, const AppRenderTarget& target)
     ui::drawPageHelpModal(canvas, theme, title, helpRowsForPage(target.helpPage()));
 }
 
+std::string trimBootText(std::string value, std::size_t max_size)
+{
+    if (value.size() <= max_size) {
+        return value;
+    }
+    if (max_size <= 3U) {
+        return value.substr(0, max_size);
+    }
+    return "..." + value.substr(value.size() - (max_size - 3U));
+}
+
+std::string bootStatusText(LibraryIndexState state, const LibraryScanProgress& progress)
+{
+    if (state == LibraryIndexState::Uninitialized) {
+        return "STARTING";
+    }
+    if (state != LibraryIndexState::Loading) {
+        return state == LibraryIndexState::Degraded ? "LIBRARY DEGRADED" : "LIBRARY READY";
+    }
+
+    switch (progress.phase) {
+    case LibraryScanPhase::DiscoveringFiles: return "SCANNING FILES";
+    case LibraryScanPhase::ReadingMetadata: return "READING METADATA";
+    case LibraryScanPhase::BuildingIndexes: return "BUILDING INDEXES";
+    case LibraryScanPhase::Complete: return "LIBRARY READY";
+    case LibraryScanPhase::Failed: return "LIBRARY DEGRADED";
+    case LibraryScanPhase::Idle: break;
+    }
+    return "LOADING LIBRARY";
+}
+
+std::string bootDetailText(const LibraryScanProgress& progress)
+{
+    switch (progress.phase) {
+    case LibraryScanPhase::DiscoveringFiles:
+        return "ROOTS " + std::to_string(progress.roots_scanned) + "/" + std::to_string(progress.roots_total)
+            + "  FILES " + std::to_string(progress.files_discovered);
+    case LibraryScanPhase::ReadingMetadata:
+        return "FILES " + std::to_string(progress.files_processed) + "/" + std::to_string(progress.files_total)
+            + "  TRACKS " + std::to_string(progress.tracks_indexed);
+    case LibraryScanPhase::BuildingIndexes:
+        return "TRACKS " + std::to_string(progress.tracks_indexed);
+    case LibraryScanPhase::Failed:
+        return progress.message.empty() ? "SCAN FAILED" : trimBootText(progress.message, 42U);
+    case LibraryScanPhase::Complete:
+        return "TRACKS " + std::to_string(progress.tracks_indexed);
+    case LibraryScanPhase::Idle:
+        break;
+    }
+    return {};
+}
+
+float bootProgressRatio(const LibraryScanProgress& progress)
+{
+    int total = 0;
+    int done = 0;
+    if (progress.phase == LibraryScanPhase::ReadingMetadata && progress.files_total > 0) {
+        total = progress.files_total;
+        done = progress.files_processed;
+    } else if (progress.phase == LibraryScanPhase::DiscoveringFiles && progress.roots_total > 0) {
+        total = progress.roots_total;
+        done = progress.roots_scanned;
+    } else if (progress.phase == LibraryScanPhase::BuildingIndexes || progress.phase == LibraryScanPhase::Complete) {
+        total = 1;
+        done = progress.phase == LibraryScanPhase::Complete ? 1 : 0;
+    }
+    if (total <= 0) {
+        return 0.0F;
+    }
+    return std::clamp(static_cast<float>(done) / static_cast<float>(total), 0.0F, 1.0F);
+}
+
+void drawBootProgress(core::Canvas& canvas, const ui::UiTheme& theme, const LibraryScanProgress& progress)
+{
+    const float ratio = bootProgressRatio(progress);
+    constexpr int width = 180;
+    constexpr int height = 4;
+    const int x = (core::kDisplayWidth - width) / 2;
+    constexpr int y = 172;
+    canvas.fillRect(x, y, width, height, theme.palette.panel2);
+    canvas.fillRect(x, y, static_cast<int>(static_cast<float>(width) * ratio), height, theme.palette.progress);
+}
+
 void renderBootPage(core::Canvas& canvas, const AppRenderTarget& target)
 {
     const auto& theme = target.theme();
     canvas.fillRect(0, 0, core::kDisplayWidth, core::kDisplayHeight, theme.palette.background);
-    const std::string status = target.libraryState() == LibraryIndexState::Uninitialized
-        ? "STARTING"
-        : (target.libraryState() == LibraryIndexState::Loading ? "LOADING LIBRARY" : "LIBRARY READY");
+    const auto progress = target.libraryScanProgress();
+    const std::string status = bootStatusText(target.libraryState(), progress);
     if (target.assets().logo) {
         const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - target.bootStarted());
         const float t = std::clamp(static_cast<float>(elapsed.count()) / 1200.0f, 0.0f, 1.0f);
@@ -173,6 +256,15 @@ void renderBootPage(core::Canvas& canvas, const AppRenderTarget& target)
         ui::drawText(canvas, "LOFIBOX ZERO", ui::centeredX("LOFIBOX ZERO", 2), 38, theme.palette.text_primary, 2);
     }
     ui::drawText(canvas, status, ui::centeredX(status, 1), 144, theme.palette.text_secondary, 1);
+    const auto detail = bootDetailText(progress);
+    if (!detail.empty()) {
+        ui::drawText(canvas, detail, ui::centeredX(detail, 1), 158, theme.palette.text_muted, 1);
+        drawBootProgress(canvas, theme, progress);
+    }
+    if (!progress.current_path.empty() && progress.phase == LibraryScanPhase::ReadingMetadata) {
+        const auto path = trimBootText(progress.current_path, 48U);
+        ui::drawText(canvas, path, ui::centeredX(path, 1), 182, theme.palette.text_muted, 1);
+    }
 }
 
 void renderMainMenu(core::Canvas& canvas, const AppRenderTarget& target)

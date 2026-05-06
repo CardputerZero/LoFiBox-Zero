@@ -62,6 +62,7 @@ public:
     [[nodiscard]] const ui::UiAssets& assets() const noexcept override;
     [[nodiscard]] std::chrono::steady_clock::time_point bootStarted() const noexcept override;
     [[nodiscard]] LibraryIndexState libraryState() const noexcept override;
+    [[nodiscard]] LibraryScanProgress libraryScanProgress() const override;
     void startLibraryLoading() override;
     void refreshLibrary() override;
     void showMainMenu() override;

@@ -39,6 +39,26 @@ bool LibraryMutationService::refreshLibrary(const std::vector<std::filesystem::p
     return true;
 }
 
+bool LibraryMutationService::beginAsyncRefreshLibrary(const std::vector<std::filesystem::path>& media_roots) const
+{
+    if (services_ == nullptr || !services_->metadata.metadata_provider) {
+        controller_.beginAsyncRefreshLibrary(media_roots, nullptr);
+        return false;
+    }
+    controller_.beginAsyncRefreshLibrary(media_roots, services_->metadata.metadata_provider);
+    return true;
+}
+
+bool LibraryMutationService::pollAsyncRefreshLibrary() const
+{
+    return controller_.pollAsyncRefreshLibrary();
+}
+
+app::LibraryScanProgress LibraryMutationService::scanProgress() const
+{
+    return controller_.scanProgress();
+}
+
 void LibraryMutationService::mergeRemoteTracks(const app::RemoteServerProfile& profile, const std::vector<app::RemoteTrack>& tracks) const
 {
     controller_.mergeRemoteTracks(profile, tracks);

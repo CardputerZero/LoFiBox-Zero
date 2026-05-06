@@ -24,6 +24,9 @@ public:
     void startLoading() const noexcept;
     void refreshLibrary(const std::vector<std::filesystem::path>& media_roots, const app::MetadataProvider& metadata_provider) const;
     [[nodiscard]] bool refreshLibrary(const std::vector<std::filesystem::path>& media_roots) const;
+    [[nodiscard]] bool beginAsyncRefreshLibrary(const std::vector<std::filesystem::path>& media_roots) const;
+    [[nodiscard]] bool pollAsyncRefreshLibrary() const;
+    [[nodiscard]] app::LibraryScanProgress scanProgress() const;
     void mergeRemoteTracks(const app::RemoteServerProfile& profile, const std::vector<app::RemoteTrack>& tracks) const;
     [[nodiscard]] bool applyRemoteTrackFacts(const app::RemoteServerProfile& profile, const app::RemoteTrack& remote_track) const;
     void setSongsContextAll() const;

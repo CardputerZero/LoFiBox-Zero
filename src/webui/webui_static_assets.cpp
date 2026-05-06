@@ -424,6 +424,7 @@ function connect(){
         if(msg.elapsed_seconds!==undefined)state.playback.elapsed_seconds=msg.elapsed_seconds;
         if(msg.queue)Object.assign(state.queue,msg.queue);
         if(msg.eq)Object.assign(state.eq,msg.eq);
+        if(msg.library)Object.assign(state.library,msg.library);
         // Real-time spectrum bands via WebSocket
         if(msg.visualization&&msg.visualization.available&&msg.visualization.bands){
           state.visualization.available=true;
@@ -554,7 +555,7 @@ function renderQueue(){
   }).join('');
 }
 
-let libView='albums',libBreadcrumb=[],libSearch='',libTracksLoaded=false,libTracks=[],libAlbumsLoaded=false,libAlbums=[];
+let libView='albums',libBreadcrumb=[],libSearch='',libTracksLoaded=false,libTracks=[],libAlbumsLoaded=false,libAlbums=[],libCountsKey='';
 function libBreadcrumbHtml(){
   let h='<span onclick="libGoHome()">Library</span>';
   for(let i=0;i<libBreadcrumb.length;i++){
@@ -582,8 +583,18 @@ function onLibSearch(v){libSearch=v.trim().toLowerCase();refreshLibView()}
 
 function renderLibrary(){
   const lib=state.library||{};
+  const countsKey=[lib.status||'',lib.track_count||0,lib.album_count||0,lib.artist_count||0,lib.genre_count||0].join('|');
+  if(countsKey!==libCountsKey){
+    libCountsKey=countsKey;
+    libTracksLoaded=false;
+    libAlbumsLoaded=false;
+  }
+  const scanInfo=lib.status==='LOADING'
+    ? '<div class="lib-pill"><span class="val">'+esc(lib.scan_phase||'SCANNING')+'</span> '+(lib.scan_files_total?((lib.scan_files_processed||0)+'/'+lib.scan_files_total):(lib.scan_files_discovered||0)+' files')+'</div>'
+    : '';
   document.getElementById('lib-stats').innerHTML=
     '<div class="lib-pill ok">'+esc(lib.status||'UNINITIALIZED')+'</div>'
+    +scanInfo
     +'<div class="lib-pill'+(libView==='tracks'&&!libBreadcrumb.length?' on':'')+'" onclick="libGoHome();libView=\'tracks\';renderLibrary()"><span class="val">'+(lib.track_count||0)+'</span> tracks</div>'
     +'<div class="lib-pill'+(libView==='albums'&&!libBreadcrumb.length?' on':'')+'" onclick="libGoHome();libView=\'albums\';renderLibrary()"><span class="val">'+(lib.album_count||0)+'</span> albums</div>'
     +'<div class="lib-pill'+(libView==='artists'?' on':'')+'" onclick="libGoHome();libView=\'artists\';renderLibrary()"><span class="val">'+(lib.artist_count||0)+'</span> artists</div>'

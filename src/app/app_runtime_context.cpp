@@ -350,15 +350,21 @@ LibraryIndexState AppRuntimeContext::libraryState() const noexcept
     return appServices().libraryQueries().state();
 }
 
+LibraryScanProgress AppRuntimeContext::libraryScanProgress() const
+{
+    return appServices().libraryQueries().scanProgress();
+}
+
 void AppRuntimeContext::startLibraryLoading()
 {
-    appServices().libraryMutations().startLoading();
+    (void)appServices().libraryMutations().beginAsyncRefreshLibrary(state_.media_roots);
 }
 
 void AppRuntimeContext::refreshLibrary()
 {
-    (void)appServices().libraryMutations().refreshLibrary(state_.media_roots);
-    refreshRemoteLibraryTracks();
+    if (appServices().libraryMutations().pollAsyncRefreshLibrary()) {
+        refreshRemoteLibraryTracks();
+    }
 }
 
 void AppRuntimeContext::refreshRemoteLibraryTracks()

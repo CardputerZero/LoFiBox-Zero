@@ -2,9 +2,13 @@
 
 #pragma once
 
+#include <atomic>
 #include <filesystem>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -38,12 +42,23 @@ struct LibraryOpenResult {
 
 class LibraryController {
 public:
+    LibraryController() = default;
+    ~LibraryController();
+    LibraryController(const LibraryController&) = delete;
+    LibraryController& operator=(const LibraryController&) = delete;
+
     [[nodiscard]] LibraryIndexState state() const noexcept;
     [[nodiscard]] const LibraryModel& model() const noexcept;
     [[nodiscard]] LibraryModel& mutableModel() noexcept;
 
     void startLoading() noexcept;
     void refreshLibrary(const std::vector<std::filesystem::path>& media_roots, const MetadataProvider& metadata_provider);
+    void beginAsyncRefreshLibrary(
+        const std::vector<std::filesystem::path>& media_roots,
+        std::shared_ptr<MetadataProvider> metadata_provider);
+    [[nodiscard]] bool pollAsyncRefreshLibrary();
+    [[nodiscard]] bool asyncRefreshRunning() const noexcept;
+    [[nodiscard]] LibraryScanProgress scanProgress() const;
     void mergeRemoteTracks(const RemoteServerProfile& profile, const std::vector<RemoteTrack>& tracks);
     bool applyRemoteTrackFacts(const RemoteServerProfile& profile, const RemoteTrack& remote_track);
 
@@ -72,8 +87,29 @@ private:
     friend class ::lofibox::application::LibraryOpenActionService;
     friend class ::lofibox::runtime::RuntimeSessionFacade;
 
+    void publishScanProgress(const LibraryScanProgress& progress);
+    void resetScanProgress(LibraryScanPhase phase, std::string message);
+    void joinAsyncScan() noexcept;
+
     LibraryRepository repository_{};
     LibraryListContext list_context_{};
+    std::thread scan_thread_{};
+    mutable std::mutex async_mutex_{};
+    std::optional<LibraryModel> pending_scan_model_{};
+    std::string pending_scan_error_{};
+    std::atomic<bool> scan_running_{false};
+    std::atomic<bool> scan_done_{false};
+    std::atomic<int> scan_phase_{static_cast<int>(LibraryScanPhase::Idle)};
+    std::atomic<int> scan_roots_total_{0};
+    std::atomic<int> scan_roots_scanned_{0};
+    std::atomic<int> scan_files_discovered_{0};
+    std::atomic<int> scan_files_total_{0};
+    std::atomic<int> scan_files_processed_{0};
+    std::atomic<int> scan_tracks_indexed_{0};
+    std::atomic<bool> scan_degraded_{false};
+    mutable std::mutex scan_progress_mutex_{};
+    std::string scan_current_path_{};
+    std::string scan_message_{};
 };
 
 } // namespace lofibox::app

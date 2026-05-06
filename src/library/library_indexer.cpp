@@ -4,13 +4,16 @@
 
 #include "app/library_scanner.h"
 
+#include <utility>
+
 namespace lofibox::library {
 
 app::LibraryModel LibraryIndexer::rebuild(
     const std::vector<std::filesystem::path>& media_roots,
-    const app::MetadataProvider& metadata_provider) const
+    const app::MetadataProvider& metadata_provider,
+    app::LibraryScanProgressCallback progress) const
 {
-    return app::scanLibrary(media_roots, metadata_provider);
+    return app::scanLibrary(media_roots, metadata_provider, std::move(progress));
 }
 
 } // namespace lofibox::library

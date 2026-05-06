@@ -24,6 +24,7 @@ public:
 
     [[nodiscard]] app::LibraryIndexState state() const noexcept;
     [[nodiscard]] const app::LibraryModel& model() const noexcept;
+    [[nodiscard]] app::LibraryScanProgress scanProgress() const;
     [[nodiscard]] const app::TrackRecord* findTrack(int id) const noexcept;
     [[nodiscard]] std::vector<int> allSongIdsSorted() const;
     [[nodiscard]] std::vector<int> trackIdsForCurrentSongs() const;

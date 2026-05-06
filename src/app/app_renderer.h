@@ -29,6 +29,7 @@ public:
     [[nodiscard]] virtual const ui::UiAssets& assets() const noexcept = 0;
     [[nodiscard]] virtual std::chrono::steady_clock::time_point bootStarted() const noexcept = 0;
     [[nodiscard]] virtual LibraryIndexState libraryState() const noexcept = 0;
+    [[nodiscard]] virtual LibraryScanProgress libraryScanProgress() const { return {}; }
     [[nodiscard]] virtual StorageInfo storage() const = 0;
     [[nodiscard]] virtual bool networkConnected() const noexcept = 0;
     [[nodiscard]] virtual int mainMenuIndex() const noexcept = 0;
@@ -46,4 +47,3 @@ public:
 void renderApp(core::Canvas& canvas, const AppRenderTarget& target);
 
 } // namespace lofibox::app
-
