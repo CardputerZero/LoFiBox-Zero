@@ -385,6 +385,9 @@ void appendPayload(std::ostringstream& out, const RuntimeCommandPayload& payload
         } else if constexpr (std::is_same_v<Payload, PlaybackStartTrackPayload>) {
             appendStringField(out, "payload", "PlaybackStartTrack");
             out << ",\"track_id\":" << data.track_id;
+            if (!data.album.empty()) out << ",\"album\":\"" << escapeJson(data.album) << '"';
+            if (!data.artist.empty()) out << ",\"artist\":\"" << escapeJson(data.artist) << '"';
+            if (!data.genre.empty()) out << ",\"genre\":\"" << escapeJson(data.genre) << '"';
         } else if constexpr (std::is_same_v<Payload, PlaybackSeekPayload>) {
             appendStringField(out, "payload", "PlaybackSeek");
             out << ",\"seconds\":" << data.seconds;
@@ -433,7 +436,11 @@ RuntimeCommandPayload parsePayload(std::string_view json)
 {
     const auto payload = stringField(json, "payload").value_or("Empty");
     if (payload == "PlaybackStartTrack") {
-        return RuntimeCommandPayload::startTrack(numberField<int>(json, "track_id").value_or(0));
+        return RuntimeCommandPayload::startTrack(
+            numberField<int>(json, "track_id").value_or(0),
+            stringField(json, "album").value_or(std::string{}),
+            stringField(json, "artist").value_or(std::string{}),
+            stringField(json, "genre").value_or(std::string{}));
     }
     if (payload == "PlaybackSeek") {
         return RuntimeCommandPayload::seek(numberField<double>(json, "seconds").value_or(0.0));

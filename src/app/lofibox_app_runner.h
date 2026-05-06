@@ -16,6 +16,8 @@ void runLoFiBoxApp(
     ui::UiAssets assets = {},
     RuntimeServices services = {},
     std::chrono::milliseconds auto_exit_after = std::chrono::milliseconds::zero(),
-    std::vector<std::string> startup_uris = {});
+    std::vector<std::string> startup_uris = {},
+    AppStarter on_start = {}
+);
 
 } // namespace lofibox::app

@@ -36,6 +36,7 @@ public:
     [[nodiscard]] bool resumePlayback();
     [[nodiscard]] bool togglePlayPause();
     [[nodiscard]] bool startTrack(int track_id);
+    [[nodiscard]] bool startTrackWithContext(int track_id, const PlaybackStartTrackPayload& context);
     [[nodiscard]] bool startRemoteItem(const std::string& profile_id, const std::string& item_id);
     [[nodiscard]] bool stepQueue(int delta);
     [[nodiscard]] bool jumpQueue(int queue_index);

@@ -3,7 +3,9 @@
 #include "runtime/runtime_session_facade.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
+#include <iostream>
 #include <optional>
 #include <vector>
 
@@ -270,6 +272,51 @@ bool RuntimeSessionFacade::startTrack(int track_id)
         remote_.setSnapshot(remoteSessionSnapshotFor(profile, *resolve.stream, remote_track, source));
     }
     return started;
+}
+
+bool RuntimeSessionFacade::startTrackWithContext(int track_id, const PlaybackStartTrackPayload& context)
+{
+    std::cerr << "[webui] startTrackWithContext: track_id=" << track_id
+              << " album=\"" << context.album << "\""
+              << " artist=\"" << context.artist << "\"\n";
+
+    auto& lib = services_.libraryController();
+
+    if (!context.album.empty()) {
+        const auto& model = services_.libraryQueries().model();
+        std::cerr << "[webui] searching " << model.albums.size() << " albums for track " << track_id << "\n";
+
+        bool found = false;
+        for (const auto& album : model.albums) {
+            auto it = std::find(album.track_ids.begin(), album.track_ids.end(), track_id);
+            if (it != album.track_ids.end()) {
+                std::cerr << "[webui] FOUND album \"" << album.album
+                          << "\" (" << album.track_ids.size() << " tracks), setting context\n";
+                lib.setSongsContextAlbum(album);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cerr << "[webui] album NOT found for track " << track_id << "\n";
+        }
+    } else if (!context.genre.empty()) {
+        const auto& model = services_.libraryQueries().model();
+        const auto ids = application::LibraryQueryService::idsForGenre(model, context.genre);
+        lib.setSongsContextFiltered(app::SongsMode::Genre, context.genre, ids);
+        std::cerr << "[webui] set genre context \"" << context.genre << "\" with " << ids.size() << " tracks\n";
+    } else {
+        std::cerr << "[webui] no album or genre in payload, falling through to plain startTrack\n";
+    }
+
+    const auto track_ids_before = lib.trackIdsForCurrentSongs();
+    std::cerr << "[webui] trackIdsForCurrentSongs() after context set: " << track_ids_before.size() << " ids\n";
+
+    services_.playbackCommands().prepareQueueForTrack(track_id);
+
+    const bool ok = startTrack(track_id);
+    std::cerr << "[webui] startTrack(" << track_id << ") returned " << (ok ? "true" : "false") << "\n";
+    return ok;
 }
 
 bool RuntimeSessionFacade::startRemoteItem(const std::string& profile_id, const std::string& item_id)

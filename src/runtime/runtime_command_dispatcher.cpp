@@ -2,6 +2,8 @@
 
 #include "runtime/runtime_command_dispatcher.h"
 
+#include <iostream>
+
 namespace lofibox::runtime {
 
 RuntimeCommandDispatcher::RuntimeCommandDispatcher(RuntimeSessionFacade& session) noexcept
@@ -24,7 +26,17 @@ RuntimeCommandResult RuntimeCommandDispatcher::dispatch(const RuntimeCommand& co
     case RuntimeCommandKind::PlaybackStartTrack:
         {
             const auto* payload = command.payload.get<PlaybackStartTrackPayload>();
-            return applied(command, "PLAYBACK_START_TRACK", "Playback start-track submitted.", payload != nullptr && session_.startTrack(payload->track_id));
+            if (payload == nullptr) {
+                return applied(command, "PLAYBACK_START_TRACK", "Playback start-track submitted.", false);
+            }
+            std::cerr << "[webui] dispatcher PlaybackStartTrack: track_id=" << payload->track_id
+                      << " album=\"" << payload->album << "\""
+                      << " artist=\"" << payload->artist << "\""
+                      << " genre=\"" << payload->genre << "\"\n";
+            const bool ok = (!payload->album.empty() || !payload->genre.empty())
+                ? session_.startTrackWithContext(payload->track_id, *payload)
+                : session_.startTrack(payload->track_id);
+            return applied(command, "PLAYBACK_START_TRACK", "Playback start-track submitted.", ok);
         }
     case RuntimeCommandKind::PlaybackStop:
         session_.playback().stop();

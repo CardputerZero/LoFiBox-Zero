@@ -18,6 +18,9 @@
 namespace lofibox::application {
 class LibraryOpenActionService;
 }
+namespace lofibox::runtime {
+class RuntimeSessionFacade;
+}
 
 namespace lofibox::app {
 
@@ -59,14 +62,15 @@ public:
     [[nodiscard]] std::optional<std::vector<std::pair<std::string, std::string>>> rowsForPage(AppPage page) const;
     [[nodiscard]] LibraryOpenResult openSelectedListItem(AppPage page, int selected);
 
-private:
-    friend class ::lofibox::application::LibraryOpenActionService;
-
     void setSongsContextAlbum(const AlbumRecord& album);
     void setSongsContextFiltered(SongsMode mode, std::string label, std::vector<int> ids);
     [[nodiscard]] std::vector<AlbumRecord> visibleAlbums() const;
     [[nodiscard]] std::vector<int> idsForGenre(const std::string& genre) const;
     [[nodiscard]] std::vector<int> idsForComposer(const std::string& composer) const;
+
+private:
+    friend class ::lofibox::application::LibraryOpenActionService;
+    friend class ::lofibox::runtime::RuntimeSessionFacade;
 
     LibraryRepository repository_{};
     LibraryListContext list_context_{};

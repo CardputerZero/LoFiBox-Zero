@@ -65,6 +65,9 @@ struct EmptyPayload {};
 
 struct PlaybackStartTrackPayload {
     int track_id{0};
+    std::string album{};   // optional — sets SongsContext to this album
+    std::string artist{};  // optional — disambiguates same-name albums
+    std::string genre{};   // optional — sets SongsContext to this genre
 };
 
 struct PlaybackSeekPayload {
@@ -149,7 +152,9 @@ struct RuntimeCommandPayload {
     RuntimeCommandData data{EmptyPayload{}};
 
     [[nodiscard]] static RuntimeCommandPayload empty() { return {}; }
-    [[nodiscard]] static RuntimeCommandPayload startTrack(int track_id) { return {{PlaybackStartTrackPayload{track_id}}}; }
+    [[nodiscard]] static RuntimeCommandPayload startTrack(int track_id,
+        std::string album = {}, std::string artist = {}, std::string genre = {})
+    { return {{PlaybackStartTrackPayload{track_id, std::move(album), std::move(artist), std::move(genre)}}}; }
     [[nodiscard]] static RuntimeCommandPayload seek(double seconds) { return {{PlaybackSeekPayload{seconds}}}; }
     [[nodiscard]] static RuntimeCommandPayload queueStep(int delta) { return {{QueueStepPayload{delta}}}; }
     [[nodiscard]] static RuntimeCommandPayload queueIndex(int queue_index) { return {{QueueIndexPayload{queue_index}}}; }

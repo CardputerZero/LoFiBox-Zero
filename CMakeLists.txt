@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.1.0 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.0 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -33,6 +33,7 @@ endif()
 option(LOFIBOX_BUILD_DEVICE "Build the Linux framebuffer device target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_X11 "Build the Linux X11 VNC/PocketFrame target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_TUI "Build the ANSI terminal UI target." ON)
+option(LOFIBOX_BUILD_WEBUI "Build the WebUI remote-control HTTP/WebSocket server." OFF)
 
 add_library(lofibox_zero_core STATIC
     src/audio/audio_pipeline_controller.cpp
@@ -135,6 +136,7 @@ target_include_directories(lofibox_zero_core PUBLIC "${PROJECT_SOURCE_DIR}/src")
 target_compile_features(lofibox_zero_core PUBLIC cxx_std_20)
 target_link_libraries(lofibox_zero_core PUBLIC Threads::Threads)
 target_compile_definitions(lofibox_zero_core PUBLIC
+    LOFIBOX_VERSION="${PROJECT_VERSION}"
     LOFIBOX_ASSET_DIR="${PROJECT_SOURCE_DIR}/assets"
     LOFIBOX_SYSTEM_ASSET_DIR="${CMAKE_INSTALL_FULL_DATADIR}/lofibox/assets"
 )
@@ -209,6 +211,27 @@ if(MSVC)
     target_compile_options(lofibox_zero_target_cli PRIVATE /W4 /permissive- /FS)
 else()
     target_compile_options(lofibox_zero_target_cli PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(LOFIBOX_BUILD_WEBUI)
+    add_library(lofibox_webui STATIC
+        src/webui/webui_json.cpp
+        src/webui/webui_config.cpp
+        src/webui/webui_runtime_adapter.cpp
+        src/webui/webui_projection.cpp
+        src/webui/webui_static_assets.cpp
+        src/webui/webui_http_router.cpp
+        src/webui/webui_ws_runtime_stream.cpp
+        src/webui/webui_server.cpp
+    )
+    target_include_directories(lofibox_webui PUBLIC "${PROJECT_SOURCE_DIR}/src")
+    target_compile_features(lofibox_webui PUBLIC cxx_std_20)
+    target_link_libraries(lofibox_webui PUBLIC lofibox_zero_core)
+    if(MSVC)
+        target_compile_options(lofibox_webui PRIVATE /W4 /permissive- /FS)
+    else()
+        target_compile_options(lofibox_webui PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 endif()
 
 if(LOFIBOX_BUILD_TUI)
@@ -289,6 +312,10 @@ if(LOFIBOX_BUILD_X11)
         target_link_libraries(lofibox_zero_x11 PRIVATE lofibox_zero_tui)
         target_compile_definitions(lofibox_zero_x11 PRIVATE LOFIBOX_HAVE_TUI=1)
     endif()
+    if(TARGET lofibox_webui)
+        target_link_libraries(lofibox_zero_x11 PRIVATE lofibox_zero_core lofibox_webui)
+        target_compile_definitions(lofibox_zero_x11 PRIVATE LOFIBOX_HAVE_WEBUI=1)
+    endif()
     install(TARGETS lofibox_zero_x11
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
@@ -317,6 +344,10 @@ if(LOFIBOX_BUILD_DEVICE)
         target_link_libraries(lofibox_zero_device PRIVATE lofibox_zero_tui)
         target_compile_definitions(lofibox_zero_device PRIVATE LOFIBOX_HAVE_TUI=1)
     endif()
+    if(TARGET lofibox_webui)
+        target_link_libraries(lofibox_zero_device PRIVATE lofibox_zero_core lofibox_webui)
+        target_compile_definitions(lofibox_zero_device PRIVATE LOFIBOX_HAVE_WEBUI=1)
+    endif()
     if(TARGET lofibox_zero_x11)
         install(TARGETS lofibox_zero_device
             RUNTIME DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
@@ -335,6 +366,17 @@ install(FILES assets/README.md
 
 install(DIRECTORY assets/ui/icons/
     DESTINATION "${CMAKE_INSTALL_DATADIR}/lofibox/assets/ui/icons"
+)
+
+# Generated Python version module — single source of truth for Python helpers.
+configure_file(
+    "${PROJECT_SOURCE_DIR}/cmake/version.py.in"
+    "${CMAKE_BINARY_DIR}/generated/version.py"
+    @ONLY
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/generated/version.py"
+    DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
 )
 
 install(FILES scripts/tag_writer.py scripts/remote_media_tool.py
@@ -716,6 +758,12 @@ if(BUILD_TESTING)
     add_executable(lofibox_helper_script_path_smoke tests/helper_script_path_smoke.cpp)
     target_link_libraries(lofibox_helper_script_path_smoke PRIVATE lofibox_zero_host_runtime)
     add_test(NAME lofibox_helper_script_path_smoke COMMAND lofibox_helper_script_path_smoke)
+
+    if(TARGET lofibox_webui)
+        add_executable(lofibox_webui_smoke tests/webui_smoke.cpp)
+        target_link_libraries(lofibox_webui_smoke PRIVATE lofibox_webui)
+        add_test(NAME lofibox_webui_smoke COMMAND lofibox_webui_smoke)
+    endif()
   endif()
 
 

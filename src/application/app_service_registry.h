@@ -33,6 +33,7 @@ public:
     [[nodiscard]] CredentialCommandService credentials() const noexcept;
     [[nodiscard]] CacheCommandService cacheCommands() const noexcept;
     [[nodiscard]] RuntimeDiagnosticService diagnostics() const noexcept;
+    [[nodiscard]] app::LibraryController& libraryController() noexcept { return controllers_.library; }
 
 private:
     app::AppControllerSet& controllers_;

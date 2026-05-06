@@ -19,7 +19,11 @@ constexpr std::string_view kNoGenres = "NO GENRES";
 constexpr std::string_view kNoComposers = "NO COMPOSERS";
 constexpr std::string_view kNoCompilations = "NO COMPILATIONS";
 constexpr std::string_view kEmpty = "EMPTY";
-constexpr std::string_view kVersion = "0.1.0";
+#if defined(LOFIBOX_VERSION)
+constexpr std::string_view kVersion{LOFIBOX_VERSION};
+#else
+constexpr std::string_view kVersion{"unknown"};
+#endif
 
 std::string formatStorage(const StorageInfo& storage)
 {
