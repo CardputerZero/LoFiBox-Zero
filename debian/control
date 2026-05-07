@@ -8,7 +8,7 @@ Build-Depends:
  libfreetype-dev,
  libx11-dev,
  libxkbcommon-dev,
- pkgconf:native
+ pkgconf:native | pkg-config
 Standards-Version: 4.7.0
 Homepage: https://github.com/vicliu624/LoFiBox-Zero
 Vcs-Browser: https://github.com/vicliu624/LoFiBox-Zero

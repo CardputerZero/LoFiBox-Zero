@@ -158,6 +158,19 @@ else()
     target_compile_options(lofibox_zero_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+add_library(lofibox_zero_host_lock STATIC
+    src/platform/host/runtime_paths.cpp
+    src/platform/host/single_instance_lock.cpp
+)
+target_include_directories(lofibox_zero_host_lock PUBLIC "${PROJECT_SOURCE_DIR}/src")
+target_compile_features(lofibox_zero_host_lock PUBLIC cxx_std_20)
+target_link_libraries(lofibox_zero_host_lock PUBLIC Threads::Threads)
+if(MSVC)
+    target_compile_options(lofibox_zero_host_lock PRIVATE /W4 /permissive- /FS)
+else()
+    target_compile_options(lofibox_zero_host_lock PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 add_library(lofibox_zero_host_runtime STATIC
     src/platform/host/acoustid_client.cpp
     src/audio/output/host_audio_playback_backend.cpp
@@ -180,19 +193,17 @@ add_library(lofibox_zero_host_runtime STATIC
     src/platform/host/runtime_host_tools.cpp
     src/platform/host/runtime_logger.cpp
     src/platform/host/runtime_metadata_enrichment_orchestrator.cpp
-    src/platform/host/runtime_paths.cpp
     src/platform/host/runtime_process.cpp
     src/platform/host/runtime_remote_media_tool.cpp
     src/platform/host/runtime_script_bridge.cpp
     src/platform/host/runtime_services_factory.cpp
-    src/platform/host/single_instance_lock.cpp
     src/platform/host/tag_writer.cpp
     src/platform/host/track_identity_provider.cpp
     src/platform/host/xdg_remote_profile_store.cpp
 )
 target_include_directories(lofibox_zero_host_runtime PUBLIC "${PROJECT_SOURCE_DIR}/src")
 target_compile_features(lofibox_zero_host_runtime PUBLIC cxx_std_20)
-target_link_libraries(lofibox_zero_host_runtime PUBLIC lofibox_zero_core Threads::Threads)
+target_link_libraries(lofibox_zero_host_runtime PUBLIC lofibox_zero_host_lock lofibox_zero_core Threads::Threads)
 target_compile_definitions(lofibox_zero_host_runtime PRIVATE
     LOFIBOX_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
     LOFIBOX_INSTALLED_HELPER_DIR="${CMAKE_INSTALL_PREFIX}/${LOFIBOX_PRIVATE_LIBDIR}"
@@ -732,12 +743,14 @@ if(BUILD_TESTING)
     add_test(NAME lofibox_lyrics_writeback_policy_smoke COMMAND lofibox_lyrics_writeback_policy_smoke)
 
     add_executable(lofibox_single_instance_lock_smoke tests/single_instance_lock_smoke.cpp)
-    target_link_libraries(lofibox_single_instance_lock_smoke PRIVATE lofibox_zero_host_runtime)
+    target_link_libraries(lofibox_single_instance_lock_smoke PRIVATE lofibox_zero_host_lock)
     add_test(NAME lofibox_single_instance_lock_smoke COMMAND lofibox_single_instance_lock_smoke)
+    set_tests_properties(lofibox_single_instance_lock_smoke PROPERTIES TIMEOUT 10)
 
     add_executable(lofibox_remote_media_smoke tests/remote_media_smoke.cpp)
     target_link_libraries(lofibox_remote_media_smoke PRIVATE lofibox_zero_host_runtime)
     add_test(NAME lofibox_remote_media_smoke COMMAND lofibox_remote_media_smoke)
+    set_tests_properties(lofibox_remote_media_smoke PROPERTIES TIMEOUT 45)
 
     add_executable(lofibox_real_emby_integration_smoke tests/real_emby_integration_smoke.cpp)
     target_link_libraries(lofibox_real_emby_integration_smoke PRIVATE lofibox_zero_host_runtime)
