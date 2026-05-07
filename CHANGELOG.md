@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+
 # Changelog
 
 All notable changes to LoFiBox Zero will be documented in this file.

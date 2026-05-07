@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+
 # LoFiBox Zero — WebUI Design Specification
 
 ## Status: Implemented
