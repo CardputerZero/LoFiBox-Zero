@@ -147,6 +147,7 @@ ui::pages::NowPlayingView buildNowPlayingProjection(const AppRenderTarget& targe
         playback.repeat_all,
         playback.repeat_one,
         playback.current_artwork ? &*playback.current_artwork : nullptr,
+        target.eqRuntimeSnapshot().effect_name,
         toUiSpectrumFrame(playback.visualization_frame)};
 }
 
@@ -191,7 +192,7 @@ ui::pages::AboutPageView buildAboutProjection(const AppRenderTarget& target)
 ui::pages::EqualizerPageView buildEqualizerProjection(const AppRenderTarget& target)
 {
     const auto eq = target.eqRuntimeSnapshot();
-    return ui_pages::EqualizerPageView{eq.bands, target.eqState().selected_band, eq.preset_name};
+    return ui_pages::EqualizerPageView{eq.bands, target.eqState().selected_band, eq.preset_name, eq.effect_name};
 }
 
 } // namespace lofibox::app

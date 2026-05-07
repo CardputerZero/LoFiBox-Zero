@@ -14,6 +14,7 @@ struct EqualizerPageView {
     std::array<int, 10> bands{};
     int selected_band{0};
     std::string preset_name{};
+    std::string effect_name{"OFF"};
 };
 
 void renderEqualizerPage(core::Canvas& canvas, const EqualizerPageView& view, const UiTheme& theme);

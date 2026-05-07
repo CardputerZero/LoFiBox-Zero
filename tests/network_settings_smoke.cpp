@@ -45,7 +45,7 @@ struct TestRuntimeApp {
         : services(lofibox::app::withNullRuntimeServices(std::move(initial_services))),
           app_host(services),
           runtime_host(app_host.registry()),
-          app({}, {}, app_host, runtime_host.client())
+          app({}, {}, {}, app_host, runtime_host.client())
     {
     }
 
@@ -63,7 +63,12 @@ int main()
     auto& app = test_app.app;
 
     app.update();
-    app.update();
+    for (int tick = 0; tick < 500; ++tick) {
+        app.update();
+        if (app.snapshot().library_ready) {
+            break;
+        }
+    }
 
     auto snapshot = app.snapshot();
     if (snapshot.current_page != lofibox::app::AppPage::MainMenu) {
@@ -152,7 +157,12 @@ int main()
         auto& configured_app = configured_test_app.app;
 
         configured_app.update();
-        configured_app.update();
+        for (int tick = 0; tick < 500; ++tick) {
+            configured_app.update();
+            if (configured_app.snapshot().library_ready) {
+                break;
+            }
+        }
         configured_app.openSettingsPage();
         configured_app.handleSettingsRemoteConfirm(0);
 

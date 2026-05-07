@@ -34,7 +34,12 @@ int main()
 {
     lofibox::app::LoFiBoxApp app{};
     app.update();
-    app.update();
+    for (int tick = 0; tick < 500; ++tick) {
+        app.update();
+        if (app.snapshot().library_ready) {
+            break;
+        }
+    }
 
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Right, "RIGHT", '\0'});
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Right, "RIGHT", '\0'});

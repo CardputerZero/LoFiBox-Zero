@@ -50,6 +50,7 @@ int main()
             false,
             false,
             nullptr,
+            "OFF",
             lofibox::ui::SpectrumFrame{
                 true,
                 std::array<float, 10>{0.12f, 0.22f, 0.46f, 0.80f, 1.0f, 0.62f, 0.34f, 0.20f, 0.52f, 0.72f}}}, theme);

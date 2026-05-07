@@ -32,7 +32,12 @@ int main()
 
     lofibox::app::LoFiBoxApp app{{root}};
     app.update();
-    app.update();
+    for (int tick = 0; tick < 500; ++tick) {
+        app.update();
+        if (app.snapshot().library_ready) {
+            break;
+        }
+    }
 
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Enter, "OK", '\0'});
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Down, "DOWN", '\0'});

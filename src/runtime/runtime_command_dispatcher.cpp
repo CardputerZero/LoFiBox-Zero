@@ -3,6 +3,7 @@
 #include "runtime/runtime_command_dispatcher.h"
 
 #include <iostream>
+#include <string>
 
 namespace lofibox::runtime {
 
@@ -153,6 +154,13 @@ RuntimeCommandResult RuntimeCommandDispatcher::dispatch(const RuntimeCommand& co
     case RuntimeCommandKind::EqReset:
         session_.eq().reset();
         return applied(command, "EQ_RESET", "EQ reset submitted.", true);
+    case RuntimeCommandKind::AudioEffectCycle:
+        {
+            const auto* payload = command.payload.get<AudioEffectCyclePayload>();
+            const auto plugin_id = payload == nullptr ? std::string{} : payload->plugin_id;
+            const int delta = payload == nullptr ? 1 : payload->delta;
+            return applied(command, "AUDIO_EFFECT_CYCLE", "Audio effect cycle submitted.", session_.eq().cycleAudioEffect(plugin_id, delta));
+        }
     case RuntimeCommandKind::SettingsApplyLive:
         {
             const auto* payload = command.payload.get<SettingsApplyLivePayload>();

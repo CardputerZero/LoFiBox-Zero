@@ -93,6 +93,11 @@ button:active{transform:scale(.94);transition:transform .08s}
   font-size:10px;color:var(--lb-accent-soft);
   background:var(--lb-panel);padding:2px 10px;display:inline-block;border-radius:10px;
 }
+.np-remix{
+  font-size:10px;color:var(--lb-accent);
+  background:var(--lb-panel);padding:2px 10px;display:inline-block;border-radius:10px;
+  margin-left:6px;
+}
 
 /* Progress */
 .np-progress{margin:0 0 8px}
@@ -295,6 +300,7 @@ button:active{transform:scale(.94);transition:transform .08s}
         <div class="np-artist" id="np-artist">&mdash;&mdash;</div>
         <div class="np-album" id="np-album">&mdash;&mdash;</div>
         <div class="np-source" id="np-source">Local</div>
+        <div class="np-remix" id="np-remix" style="display:none">REMIX <span id="np-remix-name"></span></div>
         <div class="np-progress">
           <div class="np-times"><span id="np-elapsed">00:00</span><span id="np-duration">00:00</span></div>
           <div class="np-bar-wrap" id="np-bar-wrap"><div class="np-bar"><div class="np-bar-fill" id="np-bar-fill" style="width:0%"></div></div></div>
@@ -488,6 +494,14 @@ function renderAll(){
   document.getElementById('np-artist').textContent=p.artist||'——';
   document.getElementById('np-album').textContent=p.album||'——';
   document.getElementById('np-source').textContent=p.source_label||(p.source_type||'Local');
+  const eq=state.eq||{};
+  const remixEl=document.getElementById('np-remix');
+  if(eq.effect_enabled&&eq.effect_name&&eq.effect_name!=='OFF'){
+    remixEl.style.display='inline-block';
+    document.getElementById('np-remix-name').textContent=eq.effect_name.toUpperCase();
+  }else{
+    remixEl.style.display='none';
+  }
   document.getElementById('np-elapsed').textContent=fmtTime(p.elapsed_seconds);
   document.getElementById('np-duration').textContent=fmtTime(p.duration_seconds);
   const pct=p.duration_seconds>0?Math.min(100,(p.elapsed_seconds/p.duration_seconds)*100):0;
@@ -782,10 +796,15 @@ function updateEqVisuals(){
 
 function renderMore(){
   const s=state.settings||{};
+  const eq=state.eq||{};
   document.getElementById('more-settings').innerHTML=
     '<div class="more-row"><span class="key">Output Mode</span><span class="val">'+esc(s.output_mode||'DEFAULT')+'</span></div>'
     +'<div class="more-row"><span class="key">Network Policy</span><span class="val">'+esc(s.network_policy||'DEFAULT')+'</span></div>'
-    +'<div class="more-row"><span class="key">Sleep Timer</span><span class="val">'+esc(s.sleep_timer||'OFF')+'</span></div>';
+    +'<div class="more-row"><span class="key">Sleep Timer</span><span class="val">'+esc(s.sleep_timer||'OFF')+'</span></div>'
+    +'<div class="more-row"><span class="key">Remix Effect</span><span class="val">'
+    +esc(eq.effect_name||'OFF')
+    +' <button onclick="sendCmd(\'AudioEffectCycle\')" style="font-size:11px;padding:2px 8px;margin-left:6px;background:var(--lb-panel-soft);color:var(--lb-accent);border:1px solid var(--lb-line);border-radius:4px;cursor:pointer">CYCLE</button>'
+    +'</span></div>';
 
   const src=state.sources||{};
   const r=state.remote||{};
@@ -982,6 +1001,7 @@ document.addEventListener('keydown',e=>{
     case ' ':e.preventDefault();sendCmd('Toggle');break;
     case 'ArrowLeft':sendCmd('Previous');break;
     case 'ArrowRight':sendCmd('Next');break;
+    case 'R':case 'r':sendCmd('AudioEffectCycle');break;
   }
 });
 

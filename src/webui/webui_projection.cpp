@@ -36,7 +36,9 @@ void appendPlaybackFields(std::ostringstream& out, const runtime::PlaybackRuntim
 {
     appendString(out, "status", statusString(p.status));
     separator(out); appendBool(out, "audio_active", p.audio_active);
-    separator(out); appendInt(out, "current_track_id", p.current_track_id.value_or(-1));
+    if (p.current_track_id.has_value()) {
+        separator(out); appendInt(out, "current_track_id", *p.current_track_id);
+    }
     separator(out); appendString(out, "title", p.title);
     separator(out); appendString(out, "artist", p.artist);
     separator(out); appendString(out, "album", p.album);
@@ -94,6 +96,11 @@ void appendEqFields(std::ostringstream& out, const runtime::EqRuntimeSnapshot& e
 {
     appendBool(out, "enabled", eq.enabled);
     separator(out); appendString(out, "preset_name", eq.preset_name);
+    separator(out); appendString(out, "effect_plugin_id", eq.effect_plugin_id);
+    separator(out); appendString(out, "effect_id", eq.effect_id);
+    separator(out); appendString(out, "effect_name", eq.effect_name);
+    separator(out); appendDouble(out, "effect_intensity", eq.effect_intensity);
+    separator(out); appendBool(out, "effect_enabled", eq.effect_enabled);
 
     separator(out); openArray(out, "bands");
     for (std::size_t index = 0; index < eq.bands.size(); ++index) {
@@ -251,6 +258,10 @@ std::string buildNowPlayingJson(const runtime::RuntimeSnapshot& snapshot)
 
     separator(out); openObject(out, "visualization");
     appendVisualizationFields(out, snapshot.visualization);
+    closeObject(out);
+
+    separator(out); openObject(out, "eq");
+    appendEqFields(out, snapshot.eq);
     closeObject(out);
 
     separator(out); openObject(out, "remote");
@@ -437,6 +448,10 @@ std::string buildEventJson(const runtime::RuntimeEvent& event)
         closeArray(out);
         closeObject(out);
     }
+
+    separator(out); openObject(out, "eq");
+    appendEqFields(out, event.snapshot.eq);
+    closeObject(out);
 
     // Include lyrics lines for real-time sync
     if (event.snapshot.lyrics.available) {

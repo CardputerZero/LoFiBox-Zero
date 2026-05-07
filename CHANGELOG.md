@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] — 2026-05-05
 
 ### Added
+- **Realtime audio remix effects (Radio, Tape, Vinyl)** — creative sound-color processors in the DSP chain.
+  - **Effect registry** (`src/audio/dsp/audio_effect_registry.h/.cpp`) — plugin-driven descriptor model with `plugin_id`, `effect_id`, `name`, `description`, `default_intensity`. Registry functions: `builtinAudioEffects()`, `audioEffectById()`, `audioEffectsForPlugin()`, `cycleAudioEffectId()`, `audioEffectName()`.
+  - **Built-in plugin** (`data/plugins/builtin-remix/plugin.json`) — `io.github.vicliu624.lofibox.effect.remix` with capabilities `audio.effect` / `audio.effect.realtime`, three nodes: `remix.radio`, `remix.tape`, `remix.vinyl`.
+  - **Radio effect** — narrow-band AM broadcast simulation: 285Hz–3.6kHz band-pass, 1.15kHz/+4.6dB and 2.45kHz/+2.0dB midrange peaks, 5.7Hz sinusoidal AM flutter (±3.5%) with random ionospheric jitter, ±0.0038 receiver noise, stereo-to-mono narrowing (34% stereo / 66% mono), tanh saturation (drive 1.75), 0.85 wet mix.
+  - **Tape effect** — worn cassette simulation: 38Hz–9.8kHz band-pass, 180Hz/+2.4dB low-end warmth bump, 4.3kHz/-2.0dB head-gap roll-off, 0.36Hz wow (±1.1%) + 6.4Hz flutter (±0.4%), ±0.0014 tape hiss, tanh saturation (drive 1.42), 0.96 wet mix.
+  - **Vinyl effect** — turntable simulation: 46Hz–12.8kHz band-pass, 120Hz/+1.4dB low-end compensation, 5.2kHz/+0.9dB cartridge resonance, 0.36Hz wow (±0.25%) only, ±0.0022 surface noise, dust ticks (~14/sec, exponential decay×0.88), scratches (~2/sec, decay×0.985), tanh saturation (drive 1.22), 0.92 wet mix.
+  - **Shared DSP infrastructure** — 4-stage biquad cascade per channel, xorshift32 PRNG, three phase accumulators, `tanh` soft-saturation with gain normalization, per-channel biquad isolation, stereo noise spread (±6% L/R bias).
+  - **Effect switching** — hot-update model (no track restart), full state reset on switch (biquad memories, phase accumulators, PRNG, dust/scratch accumulators).
+  - **Default intensity per effect** — Radio 0.85, Tape 1.0, Vinyl 1.0. Applied automatically from descriptor on selection.
+- **`AudioEffectProfile` on `DspChainProfile`** (`src/audio/dsp/dsp_chain.h`) — new `effect` slot with `plugin_id`, `effect_id`, `name`, `intensity`.
+- **`AudioEffectCycle` runtime command** — cycles OFF → Radio → Tape → Vinyl → OFF through the full runtime command bus, serialized in `runtime_envelope_serializer.cpp`, tracked in `RuntimeSnapshot`/`RuntimeEvent`.
+- **Effect state** — `EqRuntimeState` gains `effect_plugin_id`, `effect_id`, `effect_intensity`. `EqRuntimeSnapshot` gains `effect_name`, `effect_enabled`.
+- **UI surfaces for remix**: GUI (`R` key + Equalizer/Now Playing display), TUI (`R` key, `r` stays reconnect), WebUI (REMIX badge + Settings CYCLE button + `R`/`r` key), CLI (`lofibox remix`).
+- **Remix specification** (`docs/specification/lofibox-zero-audio-dsp-spec.md` Section 11) — full spec covering registry model, three effect parameters, shared infrastructure, switching behavior, UI contract, data model, and AI constraints.
 - **WebUI remote-control surface** — HTTP/WebSocket server providing browser-based remote control.
   - Single-file SPA frontend (`assets/webui/index.html`) with embedded CSS and JavaScript — no build step, no external dependencies.
   - Seven tabs: Now Playing, Queue, Library, Sources, EQ, Settings, Diagnostics.
@@ -30,6 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Design specification** (`docs/webui-design-spec.md`) — 13-section comprehensive spec covering positioning, dependency boundary, pages, API design, frontend architecture, WebSocket protocol details, command mapping, source layout, deployment, CMake integration, tests, and CI architecture enforcement rules.
 
 ### Changed
+- **DSP limiter disabled by default** — `EqProfile::limiter_enabled` and `LimiterProfile::enabled` now default to `false`. Previous default of `enabled=true` with `ceiling_db=-1.0` caused hard clipping at 0.891 linear for all playback.
+- **Hard-clamp limiter removed** — only final ±1.0 safety clamp remains. `ClipStats` diagnostics added (`over_ceiling_count`, `over_fullscale_count`, `peak_before`, `peak_after`) with ~5s periodic logging.
+- **Library scanning made asynchronous** — background scan thread with progress callbacks; boot page now shows per-phase progress (SCANNING FILES / READING METADATA / BUILDING INDEXES) with file counts, current path, and a progress bar.
+- **`-re` flag removed for local playback** — ffmpeg decoder no longer constrains decode speed for local files. Retained for network streams only. Improves buffer fill and reduces underrun risk.
+- **GUI artwork fixed for remote tracks** — `PlaybackController::refreshArtwork()` now routes remote tracks through `readRemoteIdentity()` with enrichment cache keys and artwork URL fallback, matching WebUI behavior.
+- **9 smoke tests updated** for async scanning model (loop-until-ready). `app_lifecycle_smoke.cpp` rewritten with 4 test scenarios including multi-tick Loading polling.
 - `LoFiBoxApp` constructor accepts optional `WebUiConfig` parameter (gated by `LOFIBOX_HAVE_WEBUI`).
 - `runLoFiBoxApp()` signature extended with optional `WebUiConfig` parameter.
 - X11 and Device target mains parse `--webui*` CLI flags and pass config to the app runner.

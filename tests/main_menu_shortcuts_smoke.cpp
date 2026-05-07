@@ -70,7 +70,12 @@ int main()
     services.playback.audio_backend = std::make_shared<FakeAudioBackend>();
     lofibox::app::LoFiBoxApp app{{root}, {}, std::move(services)};
     app.update();
-    app.update();
+    for (int tick = 0; tick < 500; ++tick) {
+        app.update();
+        if (app.snapshot().library_ready) {
+            break;
+        }
+    }
 
     auto snapshot = app.snapshot();
     if (snapshot.current_page != lofibox::app::AppPage::MainMenu || snapshot.track_count != 2) {

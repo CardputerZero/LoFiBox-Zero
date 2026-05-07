@@ -41,6 +41,7 @@ public:
     virtual void toggleShuffle() = 0;
     virtual void cycleRepeatMode() = 0;
     virtual void togglePlayPause() = 0;
+    virtual void cycleAudioEffect() = 0;
 
     virtual void moveEqualizerSelection(int delta) = 0;
     virtual void adjustSelectedEqualizerBand(int delta) = 0;

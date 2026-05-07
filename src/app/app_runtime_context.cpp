@@ -655,6 +655,14 @@ void AppRuntimeContext::togglePlayPause()
         ::lofibox::runtime::CommandOrigin::Gui});
 }
 
+void AppRuntimeContext::cycleAudioEffect()
+{
+    (void)submitRuntimeCommand(::lofibox::runtime::RuntimeCommand{
+        ::lofibox::runtime::RuntimeCommandKind::AudioEffectCycle,
+        ::lofibox::runtime::RuntimeCommandPayload::audioEffectCycle(),
+        ::lofibox::runtime::CommandOrigin::Gui});
+}
+
 void AppRuntimeContext::moveEqualizerSelection(int delta)
 {
     commandMoveEqualizerSelection(*this, delta);

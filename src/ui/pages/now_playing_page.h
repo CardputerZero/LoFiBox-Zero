@@ -30,6 +30,7 @@ struct NowPlayingView {
     bool repeat_all{false};
     bool repeat_one{false};
     const core::Canvas* artwork{};
+    std::string effect_name{"OFF"};
     SpectrumFrame visualization{};
 };
 

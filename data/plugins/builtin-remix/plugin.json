@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "io.github.vicliu624.lofibox.effect.remix",
+  "name": "LoFiBox Remix",
+  "version": "1.0.0",
+  "api_version": "1",
+  "kind": "internal_provider",
+  "builtin": true,
+  "capabilities": [
+    "audio.effect",
+    "audio.effect.realtime"
+  ],
+  "description": "Built-in realtime remix effects: Radio, Tape, and Vinyl.",
+  "author": "LoFiBox",
+  "license": "GPL-3.0-or-later",
+  "config": {
+    "effect": {
+      "type": "dsp_chain",
+      "nodes": [
+        { "type": "remix.radio" },
+        { "type": "remix.tape" },
+        { "type": "remix.vinyl" }
+      ]
+    }
+  }
+}

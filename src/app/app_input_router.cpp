@@ -33,6 +33,12 @@ namespace {
     return ch && std::toupper(static_cast<unsigned char>(*ch)) == 'E';
 }
 
+[[nodiscard]] bool isAudioEffectShortcut(const InputEvent& event) noexcept
+{
+    const auto ch = singleAsciiText(event);
+    return ch && std::toupper(static_cast<unsigned char>(*ch)) == 'R';
+}
+
 [[nodiscard]] bool routeGlobalTransportShortcut(AppInputTarget& target, const InputEvent& event)
 {
     switch (event.key) {
@@ -109,6 +115,11 @@ void routeInput(AppInputTarget& target, const InputEvent& event)
     }
 
     if (routeGlobalTransportShortcut(target, event)) {
+        return;
+    }
+
+    if (page != AppPage::Search && isAudioEffectShortcut(event)) {
+        target.cycleAudioEffect();
         return;
     }
 

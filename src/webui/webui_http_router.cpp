@@ -171,6 +171,11 @@ bool mapActionToCommand(std::string_view action, runtime::RuntimeCommand& comman
         command.payload = RuntimeCommandPayload::empty();
         return true;
     }
+    if (action == "AudioEffectCycle" || action == "RemixCycle") {
+        command.kind = RuntimeCommandKind::AudioEffectCycle;
+        command.payload = RuntimeCommandPayload::audioEffectCycle();
+        return true;
+    }
 
     // Commands that carry parameters are parsed by the caller
     return false;

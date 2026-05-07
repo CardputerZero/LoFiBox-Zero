@@ -135,7 +135,14 @@ bool queueChanged(const QueueRuntimeSnapshot& before, const QueueRuntimeSnapshot
 
 bool eqChanged(const EqRuntimeSnapshot& before, const EqRuntimeSnapshot& after)
 {
-    return before.enabled != after.enabled || before.preset_name != after.preset_name || before.bands != after.bands;
+    return before.enabled != after.enabled
+        || before.preset_name != after.preset_name
+        || before.bands != after.bands
+        || before.effect_plugin_id != after.effect_plugin_id
+        || before.effect_id != after.effect_id
+        || before.effect_name != after.effect_name
+        || std::fabs(before.effect_intensity - after.effect_intensity) >= 0.001
+        || before.effect_enabled != after.effect_enabled;
 }
 
 bool remoteChanged(const RemoteSessionSnapshot& before, const RemoteSessionSnapshot& after)

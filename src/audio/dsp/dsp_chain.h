@@ -86,11 +86,19 @@ struct LimiterProfile {
     double ceiling_db{-1.0};
 };
 
+struct AudioEffectProfile {
+    std::string plugin_id{};
+    std::string effect_id{};
+    std::string name{};
+    double intensity{1.0};
+};
+
 struct DspChainProfile {
     std::string active_profile_id{"flat"};
     EqProfile eq{};
     ReplayGainProfile replay_gain{};
     LimiterProfile limiter{};
+    AudioEffectProfile effect{};
     double volume_db{0.0};
 };
 

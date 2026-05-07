@@ -21,7 +21,7 @@ struct EnumName {
     std::string_view name;
 };
 
-constexpr std::array<EnumName<RuntimeCommandKind>, 29> kCommandNames{{
+constexpr std::array<EnumName<RuntimeCommandKind>, 30> kCommandNames{{
     {RuntimeCommandKind::PlaybackPlay, "PlaybackPlay"},
     {RuntimeCommandKind::PlaybackPause, "PlaybackPause"},
     {RuntimeCommandKind::PlaybackResume, "PlaybackResume"},
@@ -47,6 +47,7 @@ constexpr std::array<EnumName<RuntimeCommandKind>, 29> kCommandNames{{
     {RuntimeCommandKind::EqApplyPreset, "EqApplyPreset"},
     {RuntimeCommandKind::EqCyclePreset, "EqCyclePreset"},
     {RuntimeCommandKind::EqReset, "EqReset"},
+    {RuntimeCommandKind::AudioEffectCycle, "AudioEffectCycle"},
     {RuntimeCommandKind::RemoteReconnect, "RemoteReconnect"},
     {RuntimeCommandKind::SettingsApplyLive, "SettingsApplyLive"},
     {RuntimeCommandKind::RuntimeShutdown, "RuntimeShutdown"},
@@ -416,6 +417,10 @@ void appendPayload(std::ostringstream& out, const RuntimeCommandPayload& payload
         } else if constexpr (std::is_same_v<Payload, EqApplyPresetPayload>) {
             appendStringField(out, "payload", "EqApplyPreset");
             appendStringField(out, "preset_name", data.preset_name);
+        } else if constexpr (std::is_same_v<Payload, AudioEffectCyclePayload>) {
+            appendStringField(out, "payload", "AudioEffectCycle");
+            appendStringField(out, "plugin_id", data.plugin_id);
+            out << ",\"delta\":" << data.delta;
         } else if constexpr (std::is_same_v<Payload, SettingsApplyLivePayload>) {
             appendStringField(out, "payload", "SettingsApplyLive");
             appendStringField(out, "output_mode", data.output_mode);
@@ -470,6 +475,11 @@ RuntimeCommandPayload parsePayload(std::string_view json)
     }
     if (payload == "EqApplyPreset") {
         return RuntimeCommandPayload::eqApplyPreset(stringField(json, "preset_name").value_or(std::string{}));
+    }
+    if (payload == "AudioEffectCycle") {
+        return RuntimeCommandPayload::audioEffectCycle(
+            stringField(json, "plugin_id").value_or(std::string{}),
+            numberField<int>(json, "delta").value_or(1));
     }
     if (payload == "SettingsApplyLive") {
         return RuntimeCommandPayload::settingsApplyLive(
@@ -548,6 +558,11 @@ void appendSnapshot(std::ostringstream& out, const RuntimeSnapshot& snapshot)
     appendIntArray(out, "eq_bands", snapshot.eq.bands);
     appendStringField(out, "eq_preset_name", snapshot.eq.preset_name);
     appendBoolField(out, "eq_enabled", snapshot.eq.enabled);
+    appendStringField(out, "eq_effect_plugin_id", snapshot.eq.effect_plugin_id);
+    appendStringField(out, "eq_effect_id", snapshot.eq.effect_id);
+    appendStringField(out, "eq_effect_name", snapshot.eq.effect_name);
+    out << ",\"eq_effect_intensity\":" << snapshot.eq.effect_intensity;
+    appendBoolField(out, "eq_effect_enabled", snapshot.eq.effect_enabled);
     appendStringField(out, "remote_profile_id", snapshot.remote.profile_id);
     appendStringField(out, "remote_source_label", snapshot.remote.source_label);
     appendStringField(out, "remote_connection_status", snapshot.remote.connection_status);
@@ -701,6 +716,11 @@ RuntimeSnapshot parseSnapshot(std::string_view json)
     }
     snapshot.eq.preset_name = stringField(json, "eq_preset_name").value_or("FLAT");
     snapshot.eq.enabled = boolField(json, "eq_enabled").value_or(false);
+    snapshot.eq.effect_plugin_id = stringField(json, "eq_effect_plugin_id").value_or(std::string{});
+    snapshot.eq.effect_id = stringField(json, "eq_effect_id").value_or(std::string{});
+    snapshot.eq.effect_name = stringField(json, "eq_effect_name").value_or(snapshot.eq.effect_id.empty() ? std::string{"OFF"} : snapshot.eq.effect_id);
+    snapshot.eq.effect_intensity = numberField<double>(json, "eq_effect_intensity").value_or(1.0);
+    snapshot.eq.effect_enabled = boolField(json, "eq_effect_enabled").value_or(!snapshot.eq.effect_id.empty());
     snapshot.remote.profile_id = stringField(json, "remote_profile_id").value_or(std::string{});
     snapshot.remote.source_label = stringField(json, "remote_source_label").value_or("REMOTE");
     snapshot.remote.connection_status = stringField(json, "remote_connection_status").value_or("UNKNOWN");

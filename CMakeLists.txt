@@ -40,6 +40,7 @@ add_library(lofibox_zero_core STATIC
     src/cache/cache_manager.cpp
     src/audio/decoder/audio_decoder_contract.cpp
         src/audio/output/audio_output_contract.cpp
+    src/audio/dsp/audio_effect_registry.cpp
     src/audio/dsp/dsp_chain.cpp
     src/audio/dsp/realtime_dsp_engine.cpp
     src/app/input_actions.cpp
@@ -342,6 +343,7 @@ if(LOFIBOX_BUILD_DEVICE)
     target_link_libraries(lofibox_zero_device PRIVATE
         lofibox_zero_host_runtime
         lofibox_zero_target_cli
+        lofibox_zero_core
         PkgConfig::XKBCOMMON
     )
     if(TARGET lofibox_zero_tui)
@@ -349,7 +351,7 @@ if(LOFIBOX_BUILD_DEVICE)
         target_compile_definitions(lofibox_zero_device PRIVATE LOFIBOX_HAVE_TUI=1)
     endif()
     if(TARGET lofibox_webui)
-        target_link_libraries(lofibox_zero_device PRIVATE lofibox_zero_core lofibox_webui)
+        target_link_libraries(lofibox_zero_device PRIVATE lofibox_webui)
         target_compile_definitions(lofibox_zero_device PRIVATE LOFIBOX_HAVE_WEBUI=1)
     endif()
     if(TARGET lofibox_zero_x11)
@@ -370,6 +372,10 @@ install(FILES assets/README.md
 
 install(DIRECTORY assets/ui/icons/
     DESTINATION "${CMAKE_INSTALL_DATADIR}/lofibox/assets/ui/icons"
+)
+
+install(DIRECTORY data/plugins/
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/lofibox/plugins"
 )
 
 # Generated Python version module — single source of truth for Python helpers.
@@ -777,4 +783,3 @@ if(BUILD_TESTING)
         add_test(NAME lofibox_webui_smoke COMMAND lofibox_webui_smoke)
     endif()
   endif()
-

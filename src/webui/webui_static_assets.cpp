@@ -193,6 +193,7 @@ button:active{transform:scale(.94);transition:transform .08s}
 .eq-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .eq-preset-row{display:flex;align-items:center;gap:8px}
 .eq-preset-name{font-size:14px;color:var(--lb-accent);font-weight:600;min-width:60px}
+.eq-effect-name{font-size:12px;color:var(--lb-text);font-weight:600;letter-spacing:0}
 .eq-preset-row button{
   width:36px;height:36px;border:1px solid var(--lb-line);background:var(--lb-panel);
   color:var(--lb-text);border-radius:50%;cursor:pointer;font-size:16px;
@@ -347,6 +348,7 @@ button:active{transform:scale(.94);transition:transform .08s}
         <button onclick="sendCmd('EqCyclePreset',{delta:1})" title="Next preset">&gt;</button>
       </div>
       <button class="eq-toggle" id="eq-toggle" onclick="toggleEq()">OFF</button>
+      <button class="eq-toggle" id="remix-toggle" onclick="sendCmd('AudioEffectCycle')" title="Cycle Radio, Tape, Vinyl">REMIX OFF</button>
     </div>
     <div class="eq-bands" id="eq-bands"></div>
     <div class="eq-actions">
@@ -384,7 +386,7 @@ button:active{transform:scale(.94);transition:transform .08s}
 
 <script>
 // --- State ---
-let state={playback:{status:'empty',elapsed_seconds:0},queue:{items:[]},eq:{bands:[0,0,0,0,0,0,0,0,0,0],preset_name:'FLAT',enabled:false},lyrics:{lines:[]},visualization:{bands:[],available:false},library:{},sources:{},settings:{},diagnostics:{},remote:{}};
+let state={playback:{status:'empty',elapsed_seconds:0},queue:{items:[]},eq:{bands:[0,0,0,0,0,0,0,0,0,0],preset_name:'FLAT',enabled:false,effect_name:'OFF',effect_enabled:false},lyrics:{lines:[]},visualization:{bands:[],available:false},library:{},sources:{},settings:{},diagnostics:{},remote:{}};
 let ws=null,currentPage='now-playing',eqFreqs=['31','63','125','250','500','1k','2k','4k','8k','16k'];
 
 // --- Navigation ---
@@ -738,6 +740,11 @@ function renderEq(){
   const toggle=document.getElementById('eq-toggle');
   toggle.textContent=eq.enabled?'ON':'OFF';
   toggle.className='eq-toggle'+(eq.enabled?' on':'');
+  const remix=document.getElementById('remix-toggle');
+  if(remix){
+    remix.textContent='REMIX '+(eq.effect_name||'OFF');
+    remix.className='eq-toggle'+(eq.effect_enabled?' on':'');
+  }
   const bands=eq.bands||[0,0,0,0,0,0,0,0,0,0];
   document.getElementById('eq-bands').innerHTML=bands.map((v,i)=>
     '<div class="eq-band" data-index="'+i+'">'
@@ -1020,6 +1027,8 @@ document.addEventListener('keydown',e=>{
     case ' ':e.preventDefault();sendCmd('Toggle');break;
     case 'ArrowLeft':sendCmd('Previous');break;
     case 'ArrowRight':sendCmd('Next');break;
+    case 'r':
+    case 'R':sendCmd('AudioEffectCycle');break;
   }
 });
 

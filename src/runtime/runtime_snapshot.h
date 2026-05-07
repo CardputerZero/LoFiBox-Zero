@@ -71,6 +71,11 @@ struct EqRuntimeSnapshot {
     std::array<int, 10> bands{};
     std::string preset_name{"FLAT"};
     bool enabled{false};
+    std::string effect_plugin_id{};
+    std::string effect_id{};
+    std::string effect_name{"OFF"};
+    double effect_intensity{1.0};
+    bool effect_enabled{false};
     std::uint64_t version{0};
 };
 

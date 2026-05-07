@@ -8,4 +8,3 @@ inline constexpr int kDisplayWidth = 320;
 inline constexpr int kDisplayHeight = 170;
 
 } // namespace lofibox::core
-

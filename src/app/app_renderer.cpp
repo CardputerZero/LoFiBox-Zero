@@ -35,6 +35,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"F6", "SHUFFLE"},
             {"F7", "LOOP ALL"},
             {"F8", "LOOP ONE"},
+            {"R", "REMIX FX"},
             {"F9-F12", "SEARCH LIB QUEUE SET"},
         };
     case AppPage::Songs:
@@ -47,6 +48,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"T", "SORT"},
             {"E/INS", "EDIT PLAYLIST"},
             {"F2-F8", "PLAYBACK"},
+            {"R", "REMIX FX"},
             {"F9", "SEARCH"},
         };
     case AppPage::NowPlaying:
@@ -59,6 +61,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"L", "LYRICS"},
             {"Q", "QUEUE"},
             {"F2-F8", "PLAYBACK"},
+            {"R", "REMIX FX"},
             {"HOME", "MENU"},
         };
     case AppPage::Lyrics:
@@ -67,6 +70,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"LEFT/RIGHT", "PREV / NEXT"},
             {"BACKSPACE", "BACK"},
             {"F2-F8", "PLAYBACK"},
+            {"R", "REMIX FX"},
             {"HOME", "MENU"},
         };
     case AppPage::Equalizer:
@@ -76,6 +80,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"PGUP/PGDN", "+/- 3DB"},
             {"OK", "PRESET"},
             {"F2-F8", "PLAYBACK"},
+            {"R", "REMIX FX"},
             {"HOME", "MENU"},
         };
     case AppPage::Search:
@@ -103,6 +108,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"DEL", "REMOVE"},
             {"BACKSPACE", "BACK"},
             {"F2-F8", "PLAYBACK"},
+            {"R", "REMIX FX"},
             {"HOME", "MENU"},
         };
     case AppPage::MusicIndex:
@@ -125,6 +131,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"OK", "OPEN"},
             {"BACKSPACE", "BACK"},
             {"F2-F8", "PLAYBACK"},
+            {"R", "REMIX FX"},
             {"F9-F12", "SEARCH LIB QUEUE SET"},
             {"HOME", "MENU"},
         };
@@ -136,6 +143,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"OK", "OPEN"},
             {"BACKSPACE", "BACK"},
             {"F2-F8", "PLAYBACK"},
+            {"R", "REMIX FX"},
             {"F9", "SEARCH"},
             {"HOME", "MENU"},
         };

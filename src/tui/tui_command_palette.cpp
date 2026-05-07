@@ -48,6 +48,7 @@ std::optional<runtime::RuntimeCommand> commandPaletteRuntimeCommand(std::string_
     if (command == "eq on" || command == "eq enable") return makeCommand(runtime::RuntimeCommandKind::EqEnable);
     if (command == "eq off" || command == "eq disable") return makeCommand(runtime::RuntimeCommandKind::EqDisable);
     if (command == "eq reset") return makeCommand(runtime::RuntimeCommandKind::EqReset);
+    if (command == "remix" || command == "effect cycle" || command == "audio effect cycle") return makeCommand(runtime::RuntimeCommandKind::AudioEffectCycle);
     return std::nullopt;
 }
 

@@ -38,6 +38,7 @@ public:
     void toggleShuffle() override { ++toggle_shuffle_calls; }
     void cycleRepeatMode() override { ++cycle_repeat_calls; }
     void togglePlayPause() override { ++toggle_play_pause_calls; }
+    void cycleAudioEffect() override { ++cycle_audio_effect_calls; }
 
     void moveEqualizerSelection(int delta) override { eq_selection_delta += delta; }
     void adjustSelectedEqualizerBand(int delta) override { eq_band_delta += delta; }
@@ -76,6 +77,7 @@ public:
     int toggle_shuffle_calls{0};
     int cycle_repeat_calls{0};
     int toggle_play_pause_calls{0};
+    int cycle_audio_effect_calls{0};
     int eq_selection_delta{0};
     int eq_band_delta{0};
     int eq_preset_delta{0};
@@ -122,8 +124,9 @@ int main()
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::F6));
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::F7));
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::F8));
+    lofibox::app::routeInput(target, character('R'));
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::Right));
-    if (target.play_from_menu_calls != 1 || target.pause_calls != 1 || target.last_step_delta != 1 || target.step_track_calls != 2 || target.toggle_shuffle_calls != 1 || target.toggle_repeat_all_calls != 1 || target.toggle_repeat_one_calls != 1 || target.main_menu_delta != 1) {
+    if (target.play_from_menu_calls != 1 || target.pause_calls != 1 || target.last_step_delta != 1 || target.step_track_calls != 2 || target.toggle_shuffle_calls != 1 || target.toggle_repeat_all_calls != 1 || target.toggle_repeat_one_calls != 1 || target.cycle_audio_effect_calls != 1 || target.main_menu_delta != 1) {
         std::cerr << "Expected main menu shortcuts and navigation to route to menu commands.\n";
         return 1;
     }

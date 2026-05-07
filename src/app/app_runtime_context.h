@@ -103,6 +103,7 @@ public:
     void toggleShuffle() override;
     void cycleRepeatMode() override;
     void togglePlayPause() override;
+    void cycleAudioEffect() override;
     void moveEqualizerSelection(int delta) override;
     void adjustSelectedEqualizerBand(int delta) override;
     void cycleEqualizerPreset(int delta) override;

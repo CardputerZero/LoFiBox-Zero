@@ -46,6 +46,7 @@ enum class RuntimeCommandKind {
     EqApplyPreset,
     EqCyclePreset,
     EqReset,
+    AudioEffectCycle,
     RemoteReconnect,
     SettingsApplyLive,
     RuntimeShutdown,
@@ -109,6 +110,11 @@ struct EqApplyPresetPayload {
     std::string preset_name{};
 };
 
+struct AudioEffectCyclePayload {
+    std::string plugin_id{};
+    int delta{1};
+};
+
 struct SettingsApplyLivePayload {
     std::string output_mode{};
     std::string network_policy{};
@@ -144,6 +150,7 @@ using RuntimeCommandData = std::variant<
     EqAdjustBandPayload,
     EqCyclePresetPayload,
     EqApplyPresetPayload,
+    AudioEffectCyclePayload,
     SettingsApplyLivePayload,
     RemotePlayResolvedStreamPayload,
     RemotePlayResolvedLibraryTrackPayload>;
@@ -167,6 +174,10 @@ struct RuntimeCommandPayload {
     [[nodiscard]] static RuntimeCommandPayload eqAdjustBand(int band_index, int delta_db) { return {{EqAdjustBandPayload{band_index, delta_db}}}; }
     [[nodiscard]] static RuntimeCommandPayload eqCyclePreset(int delta) { return {{EqCyclePresetPayload{delta}}}; }
     [[nodiscard]] static RuntimeCommandPayload eqApplyPreset(std::string preset_name) { return {{EqApplyPresetPayload{std::move(preset_name)}}}; }
+    [[nodiscard]] static RuntimeCommandPayload audioEffectCycle(std::string plugin_id = {}, int delta = 1)
+    {
+        return {{AudioEffectCyclePayload{std::move(plugin_id), delta}}};
+    }
     [[nodiscard]] static RuntimeCommandPayload settingsApplyLive(std::string output_mode, std::string network_policy, std::string sleep_timer)
     {
         return {{SettingsApplyLivePayload{std::move(output_mode), std::move(network_policy), std::move(sleep_timer)}}};

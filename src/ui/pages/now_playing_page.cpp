@@ -178,6 +178,13 @@ void renderNowPlayingPage(core::Canvas& canvas, const NowPlayingView& view, cons
     const std::string repeat_label = view.repeat_one ? "ONE*" : (view.repeat_all ? "REP*" : "REP");
     ::lofibox::ui::drawText(canvas, repeat_label, 278, 124, view.repeat_one || view.repeat_all ? theme.palette.progress : theme.palette.text_muted, 1);
 
+    if (view.effect_name != "OFF") {
+        const auto remix_label = ::lofibox::ui::fitUpper(view.effect_name, 7);
+        constexpr int kWidth = 320;
+        const int remix_x = kWidth - static_cast<int>(remix_label.size()) * 7 - 10;
+        ::lofibox::ui::drawText(canvas, remix_label, remix_x, 4, theme.palette.focus_edge, 1);
+    }
+
     renderTidalSpectrum(canvas, view, theme);
 }
 
