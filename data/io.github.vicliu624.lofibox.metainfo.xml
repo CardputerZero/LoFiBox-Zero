@@ -21,9 +21,9 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="0.2.0" date="2026-05-05">
+    <release version="0.2.0" date="2026-05-07">
       <description>
-        <p>WebUI remote-control HTTP/WebSocket server with browser-based interface.</p>
+        <p>Realtime remix audio effects (Radio, Tape, Vinyl); async library scanning with per-phase progress bar; DSP limiter fixes and clip diagnostics; Cardputer Zero APPLaunch support; long-press Esc exit; About page with copyright and GitHub link.</p>
       </description>
     </release>
     <release version="0.1.0" date="2026-04-26" />
