@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
@@ -20,6 +21,7 @@ public:
 
     [[nodiscard]] bool available() const noexcept;
     [[nodiscard]] std::vector<app::InputEvent> drainInput();
+    [[nodiscard]] std::chrono::milliseconds escHeldDuration() const noexcept;
 
 private:
     struct Impl;

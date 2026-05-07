@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: CC0-1.0
+
+[Desktop Entry]
+Type=Application
+Name=LoFiBox
+GenericName=Music Player
+Comment=Chromeless desktop-widget music player
+Exec=/usr/lib/lofibox/lofibox
+Icon=share/images/lofibox.png
+Terminal=false
+Categories=AudioVideo;Audio;Player;Music;
+Keywords=music;audio;player;lofi;
+StartupNotify=true

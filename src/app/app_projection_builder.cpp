@@ -186,7 +186,12 @@ ui::pages::ListPageView buildListProjection(const AppRenderTarget& target)
 
 ui::pages::AboutPageView buildAboutProjection(const AppRenderTarget& target)
 {
-    return ui_pages::AboutPageView{std::string(kVersion), formatStorage(target.storage())};
+    return ui_pages::AboutPageView{
+        std::string(kVersion),
+        formatStorage(target.storage()),
+        "GPL-3.0-or-later  (C) 2025-2026 Vic Liu",
+        "github.com/vicliu624/LoFiBox-Zero",
+    };
 }
 
 ui::pages::EqualizerPageView buildEqualizerProjection(const AppRenderTarget& target)

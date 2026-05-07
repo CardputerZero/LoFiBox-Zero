@@ -404,6 +404,11 @@ install(FILES data/io.github.vicliu624.lofibox.desktop
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 
+install(FILES data/lofibox-cardputer-zero.desktop
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/APPLaunch/applications"
+    RENAME lofibox.desktop
+)
+
 install(FILES data/io.github.vicliu624.lofibox.metainfo.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo"
 )

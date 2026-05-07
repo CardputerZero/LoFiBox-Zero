@@ -86,6 +86,9 @@ LinuxFramebufferPlatform::~LinuxFramebufferPlatform() = default;
 
 bool LinuxFramebufferPlatform::pump()
 {
+    if (impl_->keyboard.escHeldDuration() >= std::chrono::milliseconds{2000}) {
+        g_running.store(false);
+    }
     return g_running.load();
 }
 

@@ -12,6 +12,8 @@ namespace lofibox::ui::pages {
 struct AboutPageView {
     std::string version{};
     std::string storage{};
+    std::string copyright{};
+    std::string github_url{};
 };
 
 void renderAboutPage(core::Canvas& canvas, const AboutPageView& view, const UiTheme& theme);
