@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // Concrete LibraryQueryProvider that delegates to LibraryQueryService
-// and uses the host ArtworkProvider for artwork extraction + read-back.
+// and uses the host ArtworkProvider for artwork extraction and read-back.
 
 #pragma once
 
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -17,7 +18,7 @@
 #include "application/library_query_service.h"
 #include "platform/host/runtime_host_internal.h"
 
-namespace lofibox::application {
+namespace lofibox::platform::host {
 
 class LibraryQueryProviderAdapter final : public app::LibraryQueryProvider {
 public:
@@ -31,7 +32,10 @@ public:
     {
     }
 
-    void bind(LibraryQueryService&& service) noexcept { service_.emplace(std::move(service)); }
+    void bind(::lofibox::application::LibraryQueryService&& service) noexcept
+    {
+        service_.emplace(std::move(service));
+    }
 
     [[nodiscard]] std::vector<app::LibraryTrackInfo> listTracks() const override
     {
@@ -166,7 +170,7 @@ private:
 
     std::shared_ptr<app::ArtworkProvider> artwork_{};
     std::filesystem::path artwork_cache_root_{};
-    std::optional<LibraryQueryService> service_{};
+    std::optional<::lofibox::application::LibraryQueryService> service_{};
 };
 
-} // namespace lofibox::application
+} // namespace lofibox::platform::host

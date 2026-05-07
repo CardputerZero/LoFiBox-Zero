@@ -26,7 +26,12 @@ public:
         const std::vector<std::filesystem::path>& media_roots,
         const MetadataProvider& metadata_provider,
         LibraryScanProgressCallback progress = {});
+    [[nodiscard]] LibraryModel rebuildModel(
+        const std::vector<std::filesystem::path>& media_roots,
+        const MetadataProvider& metadata_provider,
+        LibraryScanProgressCallback progress = {}) const;
     void applyRescanModel(LibraryModel next);
+    void rebuildDerivedIndexes();
 
     [[nodiscard]] const TrackRecord* findTrack(int id) const noexcept;
     [[nodiscard]] TrackRecord* findMutableTrack(int id) noexcept;

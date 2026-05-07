@@ -8,12 +8,10 @@
 #include <exception>
 #include <utility>
 
-#include "app/library_scanner.h"
 #include "app/library_navigation_service.h"
 #include "app/remote_profile_store.h"
 #include "application/library_open_action_service.h"
 #include "application/library_query_service.h"
-#include "library/library_indexer.h"
 
 namespace lofibox::app {
 namespace {
@@ -154,7 +152,7 @@ void LibraryController::beginAsyncRefreshLibrary(
     try {
         scan_thread_ = std::thread([this, roots = std::move(roots), provider = std::move(metadata_provider)]() {
             try {
-                auto model = library::LibraryIndexer{}.rebuild(
+                auto model = repository_.rebuildModel(
                     roots,
                     *provider,
                     [this](const LibraryScanProgress& progress) {
@@ -310,7 +308,7 @@ void LibraryController::mergeRemoteTracks(const RemoteServerProfile& profile, co
         model.tracks.push_back(std::move(track));
     }
 
-    rebuildLibraryIndexes(model);
+    repository_.rebuildDerivedIndexes();
     setSongsContextAll();
 }
 
@@ -339,7 +337,7 @@ bool LibraryController::applyRemoteTrackFacts(const RemoteServerProfile& profile
     if (!remote_track.lyrics_synced.empty()) existing->lyrics_synced = remote_track.lyrics_synced;
     if (!remote_track.lyrics_source.empty()) existing->lyrics_source = remote_track.lyrics_source;
     if (!remote_track.fingerprint.empty()) existing->fingerprint = remote_track.fingerprint;
-    rebuildLibraryIndexes(model);
+    repository_.rebuildDerivedIndexes();
     return true;
 }
 

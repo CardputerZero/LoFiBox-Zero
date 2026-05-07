@@ -19,8 +19,8 @@
 #include "tui/tui_app.h"
 #endif
 #if defined(LOFIBOX_HAVE_WEBUI)
-#include "application/library_enrich_provider_adapter.h"
-#include "application/library_query_provider_adapter.h"
+#include "platform/host/library_enrich_provider_adapter.h"
+#include "platform/host/library_query_provider_adapter.h"
 #include "webui/webui_config.h"
 #include "webui/webui_runtime_adapter.h"
 #include "webui/webui_server.h"
@@ -56,10 +56,10 @@ int main(int argc, char** argv)
             auto webui_ctx = std::make_shared<
                 std::pair<std::unique_ptr<lofibox::webui::WebUiRuntimeAdapter>,
                           std::unique_ptr<lofibox::webui::WebUiServer>>>();
-            auto lib_provider = std::make_shared<lofibox::application::LibraryQueryProviderAdapter>(
+            auto lib_provider = std::make_shared<lofibox::platform::host::LibraryQueryProviderAdapter>(
                 services.metadata.artwork_provider,
                 lofibox::platform::host::runtime_paths::appCacheDir());
-            auto enrich = std::make_shared<lofibox::application::LibraryEnrichProviderAdapter>(services.cache.cache_manager);
+            auto enrich = std::make_shared<lofibox::platform::host::LibraryEnrichProviderAdapter>(services.cache.cache_manager);
             auto active_theme = services.ui.theme;
             on_start = [cfg = std::move(webui_config), webui_ctx, lib_provider, enrich, active_theme]
                        (lofibox::runtime::RuntimeCommandClient& client,

@@ -24,7 +24,7 @@
 #include "platform/host/runtime_enrichment_client_helpers.h"
 #include "platform/host/runtime_host_internal.h"
 
-namespace lofibox::application {
+namespace lofibox::platform::host {
 namespace rt = ::lofibox::platform::host::runtime_detail;
 
 namespace {
@@ -194,4 +194,4 @@ private:
     std::optional<std::filesystem::path> curl_path_{};
 };
 
-} // namespace lofibox::application
+} // namespace lofibox::platform::host

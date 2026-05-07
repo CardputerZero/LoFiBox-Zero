@@ -50,7 +50,15 @@ void LibraryRepository::rescan(
     const MetadataProvider& metadata_provider,
     LibraryScanProgressCallback progress)
 {
-    applyRescanModel(library::LibraryIndexer{}.rebuild(media_roots, metadata_provider, std::move(progress)));
+    applyRescanModel(rebuildModel(media_roots, metadata_provider, std::move(progress)));
+}
+
+LibraryModel LibraryRepository::rebuildModel(
+    const std::vector<std::filesystem::path>& media_roots,
+    const MetadataProvider& metadata_provider,
+    LibraryScanProgressCallback progress) const
+{
+    return library::LibraryIndexer{}.rebuild(media_roots, metadata_provider, std::move(progress));
 }
 
 void LibraryRepository::applyRescanModel(LibraryModel next)
@@ -66,6 +74,11 @@ void LibraryRepository::applyRescanModel(LibraryModel next)
     migration_plan_ = governance.migrationPlan(1, 1);
     library_ = std::move(next);
     state_ = library_.degraded ? LibraryIndexState::Degraded : LibraryIndexState::Ready;
+}
+
+void LibraryRepository::rebuildDerivedIndexes()
+{
+    rebuildLibraryIndexes(library_);
 }
 
 const TrackRecord* LibraryRepository::findTrack(int id) const noexcept
