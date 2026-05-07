@@ -40,11 +40,17 @@ int main()
 
     lofibox::app::LoFiBoxApp app{{root}};
     app.update();
-    app.update();
+
+    for (int tick = 0; tick < 500; ++tick) {
+        app.update();
+        if (app.snapshot().library_ready) {
+            break;
+        }
+    }
 
     auto snapshot = app.snapshot();
     if (!snapshot.library_ready) {
-        std::cerr << "Expected library to be ready after initial scan.\n";
+        std::cerr << "Expected library to be ready after async scan (500 ticks).\n";
         return 1;
     }
 

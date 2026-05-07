@@ -140,6 +140,8 @@ TuiInputAction routeTuiInput(TuiModel& model, const TuiKeyEvent& event)
         return commandAction(runtimeCommand(runtime::RuntimeCommandKind::PlaybackStop));
     case U'r':
         return commandAction(runtimeCommand(runtime::RuntimeCommandKind::RemoteReconnect));
+    case U'R':
+        return commandAction(runtimeCommand(runtime::RuntimeCommandKind::AudioEffectCycle));
     case U'e':
         return commandAction(runtimeCommand(model.snapshot.eq.enabled ? runtime::RuntimeCommandKind::EqDisable : runtime::RuntimeCommandKind::EqEnable));
     case U'l':

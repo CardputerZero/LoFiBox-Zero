@@ -15,9 +15,11 @@ void runLoFiBoxApp(
     ui::UiAssets assets,
     RuntimeServices services,
     std::chrono::milliseconds auto_exit_after,
-    std::vector<std::string> startup_uris)
+    std::vector<std::string> startup_uris,
+    AppStarter on_start
+)
 {
-    LoFiBoxApp app{{}, std::move(assets), std::move(services), std::move(startup_uris), true};
+    LoFiBoxApp app{{}, std::move(assets), std::move(services), std::move(startup_uris), true, std::move(on_start)};
     core::Canvas canvas{core::kDisplayWidth, core::kDisplayHeight};
 
     using clock = std::chrono::steady_clock;

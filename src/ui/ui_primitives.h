@@ -3,12 +3,13 @@
 #pragma once
 
 #include <cstdint>
-#include <utility>
-#include <vector>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "core/canvas.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::ui {
 
@@ -30,17 +31,18 @@ void drawFadedTextWindow(
     bool right_align_when_fits = true);
 void drawTopBar(
     core::Canvas& canvas,
+    const UiTheme& theme,
     std::string_view title,
     bool show_back,
     std::string_view left_hint = {},
     std::string_view right_hint = {}) noexcept;
-void drawListPageFrame(core::Canvas& canvas);
-void drawPageHelpModal(core::Canvas& canvas, std::string_view title, const std::vector<std::pair<std::string_view, std::string_view>>& rows);
-void drawGlassListFocus(core::Canvas& canvas, int x, int y, int width, int height);
-void drawGlassScrollbar(core::Canvas& canvas, int x, int y, int width, int height, int thumb_y, int thumb_height);
-void drawFloatingProgressBar(core::Canvas& canvas, int x, int y, int width, int filled_width);
-void drawSoftLyricFocus(core::Canvas& canvas, int x, int center_y, int width, int height);
-void drawPaginationDots(core::Canvas& canvas, int x, int y, int count, int selected);
+void drawListPageFrame(core::Canvas& canvas, const UiTheme& theme);
+void drawPageHelpModal(core::Canvas& canvas, const UiTheme& theme, std::string_view title, const std::vector<std::pair<std::string_view, std::string_view>>& rows);
+void drawGlassListFocus(core::Canvas& canvas, const UiTheme& theme, int x, int y, int width, int height);
+void drawGlassScrollbar(core::Canvas& canvas, const UiTheme& theme, int x, int y, int width, int height, int thumb_y, int thumb_height);
+void drawFloatingProgressBar(core::Canvas& canvas, const UiTheme& theme, int x, int y, int width, int filled_width);
+void drawSoftLyricFocus(core::Canvas& canvas, const UiTheme& theme, int x, int center_y, int width, int height);
+void drawPaginationDots(core::Canvas& canvas, const UiTheme& theme, int x, int y, int count, int selected);
 void drawLine(core::Canvas& canvas, int x0, int y0, int x1, int y1, core::Color color, int thickness = 1);
 void blitScaledCanvas(
     core::Canvas& target,

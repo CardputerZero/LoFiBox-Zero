@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+#include "audio/dsp/audio_effect_registry.h"
 #include "audio/dsp/dsp_chain.h"
 
 namespace lofibox::runtime {
@@ -52,6 +53,10 @@ audio::dsp::DspChainProfile dspProfileFromEqState(const EqRuntimeState& state)
     profile.eq = std::move(eq);
     profile.limiter.enabled = true;
     profile.limiter.ceiling_db = -1.0;
+    profile.effect.plugin_id = state.effect_plugin_id;
+    profile.effect.effect_id = state.effect_id;
+    profile.effect.name = audio::dsp::audioEffectName(state.effect_id);
+    profile.effect.intensity = state.effect_intensity;
     return profile;
 }
 
@@ -129,6 +134,27 @@ bool EqRuntime::cyclePreset(int delta)
     return applyPreset(presets[static_cast<std::size_t>(next)].name);
 }
 
+bool EqRuntime::cycleAudioEffect(std::string_view plugin_id, int delta)
+{
+    const auto resolved_plugin_id = plugin_id.empty() ? audio::dsp::remixPluginId() : plugin_id;
+    if (audio::dsp::audioEffectsForPlugin(resolved_plugin_id).empty()) {
+        return false;
+    }
+    const auto next = audio::dsp::cycleAudioEffectId(resolved_plugin_id, eq_.effect_id, delta);
+    if (next.empty()) {
+        eq_.effect_plugin_id.clear();
+        eq_.effect_id.clear();
+    } else if (const auto effect = audio::dsp::audioEffectById(next)) {
+        eq_.effect_plugin_id = effect->plugin_id;
+        eq_.effect_id = effect->effect_id;
+        eq_.effect_intensity = effect->default_intensity;
+    } else {
+        return false;
+    }
+    applyToPlayback();
+    return true;
+}
+
 void EqRuntime::reset()
 {
     eq_.bands.fill(0);
@@ -143,6 +169,11 @@ EqRuntimeSnapshot EqRuntime::snapshot(std::uint64_t version) const
     result.bands = eq_.bands;
     result.preset_name = eq_.preset_name;
     result.enabled = eq_.enabled;
+    result.effect_plugin_id = eq_.effect_plugin_id;
+    result.effect_id = eq_.effect_id;
+    result.effect_name = audio::dsp::audioEffectName(eq_.effect_id);
+    result.effect_intensity = eq_.effect_intensity;
+    result.effect_enabled = audio::dsp::audioEffectEnabled(eq_.effect_id);
     result.version = version;
     return result;
 }

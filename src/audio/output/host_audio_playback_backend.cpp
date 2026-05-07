@@ -535,14 +535,15 @@ public:
             return false;
         }
 
+        const bool is_network = networkInput(input);
         std::vector<std::string> decoder_args{
             "-hide_banner",
             "-loglevel",
             "error",
             "-nostdin",
-            "-re",
         };
-        if (networkInput(input)) {
+        if (is_network) {
+            decoder_args.emplace_back("-re");
             decoder_args.emplace_back("-fflags");
             decoder_args.emplace_back("nobuffer");
             decoder_args.emplace_back("-flags");
@@ -739,6 +740,23 @@ private:
         const std::size_t frame_count = samples.size() / static_cast<std::size_t>(kChannels);
         dsp_.processInterleaved(samples.data(), frame_count, kChannels, kSampleRate);
         publishVisualization(samples);
+
+        clip_stats_counter_ += frame_count;
+        if (clip_stats_counter_ >= static_cast<std::size_t>(kSampleRate) * 5) {
+            clip_stats_counter_ = 0;
+            const auto stats = dsp_.clipStats();
+            if (stats.over_ceiling_count > 0 || stats.over_fullscale_count > 0) {
+                logRuntime(
+                    RuntimeLogLevel::Debug,
+                    "audio",
+                    "DSP clip: ceiling_clips=" + std::to_string(stats.over_ceiling_count)
+                        + " fullscale_clips=" + std::to_string(stats.over_fullscale_count)
+                        + " peak_before=" + std::to_string(stats.peak_before)
+                        + " peak_after=" + std::to_string(stats.peak_after));
+            }
+            dsp_.resetClipStats();
+        }
+
         if (!writeAll(reinterpret_cast<const char*>(samples.data()), static_cast<int>(samples.size() * sizeof(float)))) {
             markFailed();
             return;
@@ -872,6 +890,7 @@ private:
     mutable std::mutex frame_mutex_{};
     app::AudioVisualizationFrame frame_{};
     std::vector<float> visualization_window_{};
+    std::size_t clip_stats_counter_{0};
 };
 #endif
 

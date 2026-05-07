@@ -46,6 +46,7 @@ enum class RuntimeCommandKind {
     EqApplyPreset,
     EqCyclePreset,
     EqReset,
+    AudioEffectCycle,
     RemoteReconnect,
     SettingsApplyLive,
     RuntimeShutdown,
@@ -65,6 +66,9 @@ struct EmptyPayload {};
 
 struct PlaybackStartTrackPayload {
     int track_id{0};
+    std::string album{};   // optional — sets SongsContext to this album
+    std::string artist{};  // optional — disambiguates same-name albums
+    std::string genre{};   // optional — sets SongsContext to this genre
 };
 
 struct PlaybackSeekPayload {
@@ -106,6 +110,11 @@ struct EqApplyPresetPayload {
     std::string preset_name{};
 };
 
+struct AudioEffectCyclePayload {
+    std::string plugin_id{};
+    int delta{1};
+};
+
 struct SettingsApplyLivePayload {
     std::string output_mode{};
     std::string network_policy{};
@@ -141,6 +150,7 @@ using RuntimeCommandData = std::variant<
     EqAdjustBandPayload,
     EqCyclePresetPayload,
     EqApplyPresetPayload,
+    AudioEffectCyclePayload,
     SettingsApplyLivePayload,
     RemotePlayResolvedStreamPayload,
     RemotePlayResolvedLibraryTrackPayload>;
@@ -149,7 +159,9 @@ struct RuntimeCommandPayload {
     RuntimeCommandData data{EmptyPayload{}};
 
     [[nodiscard]] static RuntimeCommandPayload empty() { return {}; }
-    [[nodiscard]] static RuntimeCommandPayload startTrack(int track_id) { return {{PlaybackStartTrackPayload{track_id}}}; }
+    [[nodiscard]] static RuntimeCommandPayload startTrack(int track_id,
+        std::string album = {}, std::string artist = {}, std::string genre = {})
+    { return {{PlaybackStartTrackPayload{track_id, std::move(album), std::move(artist), std::move(genre)}}}; }
     [[nodiscard]] static RuntimeCommandPayload seek(double seconds) { return {{PlaybackSeekPayload{seconds}}}; }
     [[nodiscard]] static RuntimeCommandPayload queueStep(int delta) { return {{QueueStepPayload{delta}}}; }
     [[nodiscard]] static RuntimeCommandPayload queueIndex(int queue_index) { return {{QueueIndexPayload{queue_index}}}; }
@@ -162,6 +174,10 @@ struct RuntimeCommandPayload {
     [[nodiscard]] static RuntimeCommandPayload eqAdjustBand(int band_index, int delta_db) { return {{EqAdjustBandPayload{band_index, delta_db}}}; }
     [[nodiscard]] static RuntimeCommandPayload eqCyclePreset(int delta) { return {{EqCyclePresetPayload{delta}}}; }
     [[nodiscard]] static RuntimeCommandPayload eqApplyPreset(std::string preset_name) { return {{EqApplyPresetPayload{std::move(preset_name)}}}; }
+    [[nodiscard]] static RuntimeCommandPayload audioEffectCycle(std::string plugin_id = {}, int delta = 1)
+    {
+        return {{AudioEffectCyclePayload{std::move(plugin_id), delta}}};
+    }
     [[nodiscard]] static RuntimeCommandPayload settingsApplyLive(std::string output_mode, std::string network_policy, std::string sleep_timer)
     {
         return {{SettingsApplyLivePayload{std::move(output_mode), std::move(network_policy), std::move(sleep_timer)}}};

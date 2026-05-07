@@ -6,7 +6,9 @@
 #include <cctype>
 #include <chrono>
 #include <cstdlib>
+#include <limits>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -133,7 +135,39 @@ bool isAudioCandidate(const fs::path& path)
     return kSupported.contains(extension);
 }
 
-void collectRegularFiles(const fs::path& root, std::vector<fs::path>& files, bool& degraded)
+int progressCount(std::size_t value) noexcept
+{
+    constexpr auto kMax = static_cast<std::size_t>(std::numeric_limits<int>::max());
+    return value > kMax ? std::numeric_limits<int>::max() : static_cast<int>(value);
+}
+
+void publishProgress(const LibraryScanProgressCallback& progress, const LibraryScanProgress& snapshot)
+{
+    if (progress) {
+        progress(snapshot);
+    }
+}
+
+void publishDiscoveredFileProgress(
+    const LibraryScanProgressCallback& progress,
+    LibraryScanProgress& snapshot,
+    const std::vector<fs::path>& files,
+    const fs::path& current_path)
+{
+    if (!progress || files.size() % 64U != 0U) {
+        return;
+    }
+    snapshot.files_discovered = progressCount(files.size());
+    snapshot.current_path = pathUtf8String(current_path);
+    publishProgress(progress, snapshot);
+}
+
+void collectRegularFiles(
+    const fs::path& root,
+    std::vector<fs::path>& files,
+    bool& degraded,
+    const LibraryScanProgressCallback& progress,
+    LibraryScanProgress& progress_snapshot)
 {
 #if defined(_WIN32)
     std::error_code iterator_error{};
@@ -144,6 +178,8 @@ void collectRegularFiles(const fs::path& root, std::vector<fs::path>& files, boo
 
     if (iterator_error) {
         degraded = true;
+        progress_snapshot.degraded = true;
+        publishProgress(progress, progress_snapshot);
         return;
     }
 
@@ -153,14 +189,19 @@ void collectRegularFiles(const fs::path& root, std::vector<fs::path>& files, boo
         std::error_code status_error{};
         if (entry.is_regular_file(status_error) && !status_error) {
             files.push_back(entry.path());
+            publishDiscoveredFileProgress(progress, progress_snapshot, files, entry.path());
         } else if (status_error) {
             degraded = true;
+            progress_snapshot.degraded = true;
+            publishProgress(progress, progress_snapshot);
         }
 
         std::error_code increment_error{};
         iterator.increment(increment_error);
         if (increment_error) {
             degraded = true;
+            progress_snapshot.degraded = true;
+            publishProgress(progress, progress_snapshot);
             increment_error.clear();
         }
     }
@@ -168,6 +209,8 @@ void collectRegularFiles(const fs::path& root, std::vector<fs::path>& files, boo
     DIR* directory = opendir(root.c_str());
     if (directory == nullptr) {
         degraded = true;
+        progress_snapshot.degraded = true;
+        publishProgress(progress, progress_snapshot);
         return;
     }
 
@@ -181,13 +224,16 @@ void collectRegularFiles(const fs::path& root, std::vector<fs::path>& files, boo
         struct stat status {};
         if (lstat(child.c_str(), &status) != 0) {
             degraded = true;
+            progress_snapshot.degraded = true;
+            publishProgress(progress, progress_snapshot);
             continue;
         }
 
         if (S_ISDIR(status.st_mode)) {
-            collectRegularFiles(child, files, degraded);
+            collectRegularFiles(child, files, degraded, progress, progress_snapshot);
         } else if (S_ISREG(status.st_mode)) {
             files.push_back(child);
+            publishDiscoveredFileProgress(progress, progress_snapshot, files, child);
         }
     }
 
@@ -254,7 +300,10 @@ StorageInfo scanStorageInfo(const std::vector<fs::path>& roots)
 
 } // namespace
 
-LibraryModel scanLibrary(const std::vector<fs::path>& requested_roots, const MetadataProvider& metadata_provider)
+LibraryModel scanLibrary(
+    const std::vector<fs::path>& requested_roots,
+    const MetadataProvider& metadata_provider,
+    LibraryScanProgressCallback progress)
 {
     LibraryModel model{};
     const auto roots = defaultRoots(requested_roots);
@@ -263,43 +312,85 @@ LibraryModel scanLibrary(const std::vector<fs::path>& requested_roots, const Met
     int next_id = 1;
     std::int64_t fallback_added = 1;
 
+    LibraryScanProgress progress_snapshot{};
+    progress_snapshot.phase = LibraryScanPhase::DiscoveringFiles;
+    progress_snapshot.roots_total = progressCount(roots.size());
+    progress_snapshot.message = "discovering library files";
+    publishProgress(progress, progress_snapshot);
+
+    std::vector<fs::path> files{};
     for (const auto& root : roots) {
+        progress_snapshot.current_path = pathUtf8String(root);
+        publishProgress(progress, progress_snapshot);
+
         std::error_code exists_error{};
         if (!fs::exists(root, exists_error) || exists_error) {
-            if (!exists_error) {
-                model.degraded = true;
+            model.degraded = true;
+            progress_snapshot.degraded = true;
+            ++progress_snapshot.roots_scanned;
+            publishProgress(progress, progress_snapshot);
+            continue;
+        }
+
+        collectRegularFiles(root, files, model.degraded, progress, progress_snapshot);
+        ++progress_snapshot.roots_scanned;
+        progress_snapshot.files_discovered = progressCount(files.size());
+        progress_snapshot.degraded = model.degraded;
+        publishProgress(progress, progress_snapshot);
+    }
+
+    progress_snapshot.phase = LibraryScanPhase::ReadingMetadata;
+    progress_snapshot.files_total = progressCount(files.size());
+    progress_snapshot.files_processed = 0;
+    progress_snapshot.tracks_indexed = 0;
+    progress_snapshot.message = "reading local metadata";
+    publishProgress(progress, progress_snapshot);
+
+    for (const auto& path : files) {
+        if (!isAudioCandidate(path)) {
+            ++progress_snapshot.files_processed;
+            if (progress_snapshot.files_processed % 16 == 0) {
+                publishProgress(progress, progress_snapshot);
             }
             continue;
         }
 
-        std::vector<fs::path> files{};
-        collectRegularFiles(root, files, model.degraded);
+        progress_snapshot.current_path = pathUtf8String(path);
+        publishProgress(progress, progress_snapshot);
 
-        for (const auto& path : files) {
-            if (!isAudioCandidate(path)) {
-                continue;
-            }
+        TrackRecord track{};
+        track.id = next_id++;
+        track.path = path;
+        const auto metadata = metadata_provider.read(path, MetadataReadMode::LocalOnly);
+        track.title = preferMetadataOrFallback(metadata.title, pathUtf8String(path.stem()));
+        track.album = preferMetadataOrFallback(metadata.album, pathUtf8String(path.parent_path().filename()));
+        track.artist = preferMetadataOrFallback(metadata.artist, pathUtf8String(path.parent_path().parent_path().filename()));
+        track.genre = preferMetadataOrFallback(metadata.genre, std::string(kUnknownMetadata));
+        track.composer = preferMetadataOrFallback(metadata.composer, std::string(kUnknownMetadata));
 
-            TrackRecord track{};
-            track.id = next_id++;
-            track.path = path;
-            const auto metadata = metadata_provider.read(path, MetadataReadMode::LocalOnly);
-            track.title = preferMetadataOrFallback(metadata.title, pathUtf8String(path.stem()));
-            track.album = preferMetadataOrFallback(metadata.album, pathUtf8String(path.parent_path().filename()));
-            track.artist = preferMetadataOrFallback(metadata.artist, pathUtf8String(path.parent_path().parent_path().filename()));
-            track.genre = preferMetadataOrFallback(metadata.genre, std::string(kUnknownMetadata));
-            track.composer = preferMetadataOrFallback(metadata.composer, std::string(kUnknownMetadata));
+        std::error_code write_error{};
+        const auto last_write = fs::last_write_time(path, write_error);
+        track.added_time = write_error ? fallback_added++ : toUnixSeconds(last_write);
+        track.duration_seconds = metadata.duration_seconds.value_or(150 + static_cast<int>((std::hash<std::string>{}(path.string()) % 210)));
 
-            std::error_code write_error{};
-            const auto last_write = fs::last_write_time(path, write_error);
-            track.added_time = write_error ? fallback_added++ : toUnixSeconds(last_write);
-            track.duration_seconds = metadata.duration_seconds.value_or(150 + static_cast<int>((std::hash<std::string>{}(path.string()) % 210)));
-
-            model.tracks.push_back(std::move(track));
-        }
+        model.tracks.push_back(std::move(track));
+        ++progress_snapshot.files_processed;
+        progress_snapshot.tracks_indexed = progressCount(model.tracks.size());
+        publishProgress(progress, progress_snapshot);
     }
 
+    progress_snapshot.phase = LibraryScanPhase::BuildingIndexes;
+    progress_snapshot.message = "building library indexes";
+    progress_snapshot.current_path.clear();
+    publishProgress(progress, progress_snapshot);
+
     rebuildLibraryIndexes(model);
+
+    progress_snapshot.phase = LibraryScanPhase::Complete;
+    progress_snapshot.message = "library scan complete";
+    progress_snapshot.tracks_indexed = progressCount(model.tracks.size());
+    progress_snapshot.degraded = model.degraded;
+    publishProgress(progress, progress_snapshot);
 
     return model;
 }

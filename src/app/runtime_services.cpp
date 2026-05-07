@@ -136,6 +136,9 @@ RuntimeServices withNullRuntimeServices(RuntimeServices services)
     if (!services.cache.cache_manager) {
         services.cache.cache_manager = std::make_shared<::lofibox::cache::CacheManager>(std::filesystem::temp_directory_path() / "lofibox-null-cache");
     }
+    if (!services.ui.theme) {
+        services.ui.theme = std::make_shared<ui::UiTheme>(ui::defaultTheme());
+    }
     return services;
 }
 

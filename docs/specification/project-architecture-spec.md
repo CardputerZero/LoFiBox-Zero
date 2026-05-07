@@ -167,6 +167,7 @@ Any future visual or input validation must go through a real Linux product targe
 - Cardputer Zero profile responsibilities must follow `cardputer-zero-adaptation-spec.md`.
 - Testing and CI responsibilities must follow `testing-ci-spec.md`.
 - Copyright and resource responsibilities must follow `copyright-resource-governance-spec.md`.
+- Version control, version propagation, and version bump responsibilities must follow `lofibox-zero-version-control-spec.md`.
 - Current UI implementation work must follow `lofibox-zero-page-spec.md`, `lofibox-zero-layout-spec.md`, and `lofibox-zero-visual-design-spec.md`.
 - Final product meaning belongs to `lofibox-zero-final-product-spec.md`, not to any current implementation contract.
 

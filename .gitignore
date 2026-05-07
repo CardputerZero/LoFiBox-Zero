@@ -43,3 +43,6 @@ clash-verge-extract/
 *.exe
 *.pdb
 *.ilk
+.claude/
+.wolf/
+CLAUDE.md

@@ -100,10 +100,12 @@ std::string searchItemKey(const MediaItem& item)
 
 AppRuntimeContext::AppRuntimeContext(std::vector<std::filesystem::path> media_roots,
                                      ui::UiAssets assets,
+                                     ui::UiTheme theme,
                                      ::lofibox::application::AppServiceHost& app_host,
                                      ::lofibox::runtime::RuntimeCommandClient& runtime_client,
                                      std::vector<std::string> startup_uris)
     : state_{},
+      theme_(std::move(theme)),
       app_host_(app_host),
       runtime_client_(runtime_client)
 {
@@ -348,15 +350,21 @@ LibraryIndexState AppRuntimeContext::libraryState() const noexcept
     return appServices().libraryQueries().state();
 }
 
+LibraryScanProgress AppRuntimeContext::libraryScanProgress() const
+{
+    return appServices().libraryQueries().scanProgress();
+}
+
 void AppRuntimeContext::startLibraryLoading()
 {
-    appServices().libraryMutations().startLoading();
+    (void)appServices().libraryMutations().beginAsyncRefreshLibrary(state_.media_roots);
 }
 
 void AppRuntimeContext::refreshLibrary()
 {
-    (void)appServices().libraryMutations().refreshLibrary(state_.media_roots);
-    refreshRemoteLibraryTracks();
+    if (appServices().libraryMutations().pollAsyncRefreshLibrary()) {
+        refreshRemoteLibraryTracks();
+    }
 }
 
 void AppRuntimeContext::refreshRemoteLibraryTracks()
@@ -531,6 +539,11 @@ void AppRuntimeContext::showMainMenuPage()
     showMainMenu();
 }
 
+const ui::UiTheme& AppRuntimeContext::theme() const noexcept
+{
+    return theme_;
+}
+
 AppPageModel AppRuntimeContext::pageModel() const
 {
     const auto page = currentPage();
@@ -639,6 +652,14 @@ void AppRuntimeContext::togglePlayPause()
     (void)submitRuntimeCommand(::lofibox::runtime::RuntimeCommand{
         ::lofibox::runtime::RuntimeCommandKind::PlaybackToggle,
         {},
+        ::lofibox::runtime::CommandOrigin::Gui});
+}
+
+void AppRuntimeContext::cycleAudioEffect()
+{
+    (void)submitRuntimeCommand(::lofibox::runtime::RuntimeCommand{
+        ::lofibox::runtime::RuntimeCommandKind::AudioEffectCycle,
+        ::lofibox::runtime::RuntimeCommandPayload::audioEffectCycle(),
         ::lofibox::runtime::CommandOrigin::Gui});
 }
 

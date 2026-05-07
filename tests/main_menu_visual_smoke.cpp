@@ -100,13 +100,13 @@ int main()
     lofibox::ui::pages::MainMenuView empty_summary_view{};
     empty_summary_view.playback_summary = "";
     lofibox::core::Canvas empty_summary_canvas{lofibox::core::kDisplayWidth, lofibox::core::kDisplayHeight};
-    lofibox::ui::pages::renderMainMenuPage(empty_summary_canvas, empty_summary_view);
+    lofibox::ui::pages::renderMainMenuPage(empty_summary_canvas, empty_summary_view, lofibox::ui::defaultTheme());
 
     lofibox::ui::pages::MainMenuView short_summary_view{};
     short_summary_view.playback_summary = "NO TRACK";
     short_summary_view.playback_summary_scroll_px = 0;
     lofibox::core::Canvas short_summary_canvas{lofibox::core::kDisplayWidth, lofibox::core::kDisplayHeight};
-    lofibox::ui::pages::renderMainMenuPage(short_summary_canvas, short_summary_view);
+    lofibox::ui::pages::renderMainMenuPage(short_summary_canvas, short_summary_view, lofibox::ui::defaultTheme());
     const int short_left_diff = topbarTextDiffPixels(short_summary_canvas, empty_summary_canvas, 118, 3, 70, 15);
     const int short_right_diff = topbarTextDiffPixels(short_summary_canvas, empty_summary_canvas, 230, 3, 82, 15);
     if (short_right_diff <= short_left_diff || short_right_diff < 12) {
@@ -118,10 +118,10 @@ int main()
     long_summary_view.playback_summary = "PLAYING  VERY LONG REMOTE TRACK TITLE - VERY LONG ARTIST NAME";
     long_summary_view.playback_summary_scroll_px = 0;
     lofibox::core::Canvas long_summary_start{lofibox::core::kDisplayWidth, lofibox::core::kDisplayHeight};
-    lofibox::ui::pages::renderMainMenuPage(long_summary_start, long_summary_view);
+    lofibox::ui::pages::renderMainMenuPage(long_summary_start, long_summary_view, lofibox::ui::defaultTheme());
     long_summary_view.playback_summary_scroll_px = 54;
     lofibox::core::Canvas long_summary_scrolled{lofibox::core::kDisplayWidth, lofibox::core::kDisplayHeight};
-    lofibox::ui::pages::renderMainMenuPage(long_summary_scrolled, long_summary_view);
+    lofibox::ui::pages::renderMainMenuPage(long_summary_scrolled, long_summary_view, lofibox::ui::defaultTheme());
     if (topbarTextDiffPixels(long_summary_start, long_summary_scrolled, 118, 3, 194, 15) < 20) {
         std::cerr << "Expected overflowing Main Menu playback summary to scroll right-to-left in the fixed topbar region.\n";
         return 1;

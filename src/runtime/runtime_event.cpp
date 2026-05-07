@@ -135,7 +135,14 @@ bool queueChanged(const QueueRuntimeSnapshot& before, const QueueRuntimeSnapshot
 
 bool eqChanged(const EqRuntimeSnapshot& before, const EqRuntimeSnapshot& after)
 {
-    return before.enabled != after.enabled || before.preset_name != after.preset_name || before.bands != after.bands;
+    return before.enabled != after.enabled
+        || before.preset_name != after.preset_name
+        || before.bands != after.bands
+        || before.effect_plugin_id != after.effect_plugin_id
+        || before.effect_id != after.effect_id
+        || before.effect_name != after.effect_name
+        || std::fabs(before.effect_intensity - after.effect_intensity) >= 0.001
+        || before.effect_enabled != after.effect_enabled;
 }
 
 bool remoteChanged(const RemoteSessionSnapshot& before, const RemoteSessionSnapshot& after)
@@ -190,7 +197,16 @@ bool libraryChanged(const LibraryRuntimeSnapshot& before, const LibraryRuntimeSn
         || before.album_count != after.album_count
         || before.artist_count != after.artist_count
         || before.genre_count != after.genre_count
-        || before.status != after.status;
+        || before.status != after.status
+        || before.scan_phase != after.scan_phase
+        || before.scan_message != after.scan_message
+        || before.scan_current_path != after.scan_current_path
+        || before.scan_roots_total != after.scan_roots_total
+        || before.scan_roots_scanned != after.scan_roots_scanned
+        || before.scan_files_discovered != after.scan_files_discovered
+        || before.scan_files_total != after.scan_files_total
+        || before.scan_files_processed != after.scan_files_processed
+        || before.scan_tracks_indexed != after.scan_tracks_indexed;
 }
 
 bool diagnosticsChanged(const DiagnosticsRuntimeSnapshot& before, const DiagnosticsRuntimeSnapshot& after)
@@ -224,7 +240,7 @@ RuntimeEventKind libraryEventKind(const LibraryRuntimeSnapshot& before, const Li
     if (before.status != "LOADING" && after.status == "LOADING") {
         return RuntimeEventKind::LibraryScanStarted;
     }
-    if (before.status == "LOADING" && after.status == "READY") {
+    if (before.status == "LOADING" && (after.status == "READY" || after.status == "DEGRADED")) {
         return RuntimeEventKind::LibraryScanCompleted;
     }
     return RuntimeEventKind::LibraryScanProgress;

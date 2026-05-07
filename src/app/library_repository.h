@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "app/library_model.h"
+#include "app/library_scanner.h"
 #include "app/runtime_services.h"
 #include "library/library_governance.h"
 
@@ -20,7 +21,17 @@ public:
     [[nodiscard]] const std::vector<::lofibox::library::LibraryMigration>& migrationPlan() const noexcept;
 
     void markLoading() noexcept;
-    void rescan(const std::vector<std::filesystem::path>& media_roots, const MetadataProvider& metadata_provider);
+    void markDegraded() noexcept;
+    void rescan(
+        const std::vector<std::filesystem::path>& media_roots,
+        const MetadataProvider& metadata_provider,
+        LibraryScanProgressCallback progress = {});
+    [[nodiscard]] LibraryModel rebuildModel(
+        const std::vector<std::filesystem::path>& media_roots,
+        const MetadataProvider& metadata_provider,
+        LibraryScanProgressCallback progress = {}) const;
+    void applyRescanModel(LibraryModel next);
+    void rebuildDerivedIndexes();
 
     [[nodiscard]] const TrackRecord* findTrack(int id) const noexcept;
     [[nodiscard]] TrackRecord* findMutableTrack(int id) noexcept;

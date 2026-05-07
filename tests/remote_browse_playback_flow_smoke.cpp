@@ -165,9 +165,14 @@ int main()
 
     lofibox::application::AppServiceHost app_host{services};
     lofibox::runtime::RuntimeHost runtime_host{app_host.registry()};
-    lofibox::app::AppRuntimeContext app{{media_root}, {}, app_host, runtime_host.client()};
+    lofibox::app::AppRuntimeContext app{{media_root}, {}, {}, app_host, runtime_host.client()};
     app.update();
-    app.update();
+    for (int tick = 0; tick < 500; ++tick) {
+        app.update();
+        if (app.snapshot().library_ready) {
+            break;
+        }
+    }
     app.pushPage(lofibox::app::AppPage::MusicIndex);
     const auto library_rows = app.pageModel().rows;
     if (library_rows.size() != 7U) {

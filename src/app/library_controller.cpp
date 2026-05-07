@@ -5,9 +5,9 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
+#include <exception>
 #include <utility>
 
-#include "app/library_scanner.h"
 #include "app/library_navigation_service.h"
 #include "app/remote_profile_store.h"
 #include "application/library_open_action_service.h"
@@ -38,6 +38,11 @@ std::string sourceLabelForProfile(const RemoteServerProfile& profile)
 
 } // namespace
 
+LibraryController::~LibraryController()
+{
+    joinAsyncScan();
+}
+
 LibraryIndexState LibraryController::state() const noexcept
 {
     return repository_.state();
@@ -58,10 +63,191 @@ void LibraryController::startLoading() noexcept
     repository_.markLoading();
 }
 
+void LibraryController::resetScanProgress(LibraryScanPhase phase, std::string message)
+{
+    scan_phase_.store(static_cast<int>(phase));
+    scan_roots_total_.store(0);
+    scan_roots_scanned_.store(0);
+    scan_files_discovered_.store(0);
+    scan_files_total_.store(0);
+    scan_files_processed_.store(0);
+    scan_tracks_indexed_.store(0);
+    scan_degraded_.store(false);
+    std::lock_guard lock{scan_progress_mutex_};
+    scan_current_path_.clear();
+    scan_message_ = std::move(message);
+}
+
+void LibraryController::publishScanProgress(const LibraryScanProgress& progress)
+{
+    scan_phase_.store(static_cast<int>(progress.phase));
+    scan_roots_total_.store(progress.roots_total);
+    scan_roots_scanned_.store(progress.roots_scanned);
+    scan_files_discovered_.store(progress.files_discovered);
+    scan_files_total_.store(progress.files_total);
+    scan_files_processed_.store(progress.files_processed);
+    scan_tracks_indexed_.store(progress.tracks_indexed);
+    scan_degraded_.store(progress.degraded);
+    std::lock_guard lock{scan_progress_mutex_};
+    scan_current_path_ = progress.current_path;
+    scan_message_ = progress.message;
+}
+
+LibraryScanProgress LibraryController::scanProgress() const
+{
+    LibraryScanProgress progress{};
+    progress.phase = static_cast<LibraryScanPhase>(scan_phase_.load());
+    progress.roots_total = scan_roots_total_.load();
+    progress.roots_scanned = scan_roots_scanned_.load();
+    progress.files_discovered = scan_files_discovered_.load();
+    progress.files_total = scan_files_total_.load();
+    progress.files_processed = scan_files_processed_.load();
+    progress.tracks_indexed = scan_tracks_indexed_.load();
+    progress.degraded = scan_degraded_.load();
+    std::lock_guard lock{scan_progress_mutex_};
+    progress.current_path = scan_current_path_;
+    progress.message = scan_message_;
+    return progress;
+}
+
 void LibraryController::refreshLibrary(const std::vector<std::filesystem::path>& media_roots, const MetadataProvider& metadata_provider)
 {
     repository_.rescan(media_roots, metadata_provider);
     setSongsContextAll();
+}
+
+void LibraryController::beginAsyncRefreshLibrary(
+    const std::vector<std::filesystem::path>& media_roots,
+    std::shared_ptr<MetadataProvider> metadata_provider)
+{
+    if (scan_done_.load()) {
+        (void)pollAsyncRefreshLibrary();
+    }
+    if (scan_running_.load()) {
+        return;
+    }
+    joinAsyncScan();
+
+    repository_.markLoading();
+    resetScanProgress(LibraryScanPhase::DiscoveringFiles, "starting library scan");
+
+    if (!metadata_provider) {
+        LibraryScanProgress progress{};
+        progress.phase = LibraryScanPhase::Failed;
+        progress.message = "metadata provider unavailable";
+        publishScanProgress(progress);
+        repository_.markDegraded();
+        return;
+    }
+
+    {
+        std::lock_guard lock{async_mutex_};
+        pending_scan_model_.reset();
+        pending_scan_error_.clear();
+    }
+    scan_done_.store(false);
+    scan_running_.store(true);
+
+    auto roots = media_roots;
+    try {
+        scan_thread_ = std::thread([this, roots = std::move(roots), provider = std::move(metadata_provider)]() {
+            try {
+                auto model = repository_.rebuildModel(
+                    roots,
+                    *provider,
+                    [this](const LibraryScanProgress& progress) {
+                        publishScanProgress(progress);
+                    });
+                {
+                    std::lock_guard lock{async_mutex_};
+                    pending_scan_model_ = std::move(model);
+                    pending_scan_error_.clear();
+                }
+            } catch (const std::exception& error) {
+                LibraryScanProgress progress = scanProgress();
+                progress.phase = LibraryScanPhase::Failed;
+                progress.message = error.what();
+                publishScanProgress(progress);
+                {
+                    std::lock_guard lock{async_mutex_};
+                    pending_scan_model_.reset();
+                    pending_scan_error_ = error.what();
+                }
+            } catch (...) {
+                LibraryScanProgress progress = scanProgress();
+                progress.phase = LibraryScanPhase::Failed;
+                progress.message = "unknown library scan failure";
+                publishScanProgress(progress);
+                {
+                    std::lock_guard lock{async_mutex_};
+                    pending_scan_model_.reset();
+                    pending_scan_error_ = "unknown library scan failure";
+                }
+            }
+            scan_running_.store(false);
+            scan_done_.store(true);
+        });
+    } catch (const std::exception& error) {
+        scan_running_.store(false);
+        LibraryScanProgress progress = scanProgress();
+        progress.phase = LibraryScanPhase::Failed;
+        progress.message = error.what();
+        progress.degraded = true;
+        publishScanProgress(progress);
+        repository_.markDegraded();
+    }
+}
+
+bool LibraryController::pollAsyncRefreshLibrary()
+{
+    if (!scan_done_.load()) {
+        return false;
+    }
+
+    joinAsyncScan();
+
+    std::optional<LibraryModel> model{};
+    std::string error{};
+    {
+        std::lock_guard lock{async_mutex_};
+        model = std::move(pending_scan_model_);
+        pending_scan_model_.reset();
+        error = std::move(pending_scan_error_);
+        pending_scan_error_.clear();
+    }
+
+    if (model) {
+        repository_.applyRescanModel(std::move(*model));
+        setSongsContextAll();
+        LibraryScanProgress progress = scanProgress();
+        progress.phase = LibraryScanPhase::Complete;
+        progress.message = repository_.state() == LibraryIndexState::Degraded ? "library scan completed with warnings" : "library ready";
+        progress.degraded = repository_.state() == LibraryIndexState::Degraded;
+        publishScanProgress(progress);
+    } else {
+        repository_.markDegraded();
+        LibraryScanProgress progress = scanProgress();
+        progress.phase = LibraryScanPhase::Failed;
+        progress.message = error.empty() ? "library scan failed" : std::move(error);
+        progress.degraded = true;
+        publishScanProgress(progress);
+    }
+
+    scan_done_.store(false);
+    scan_running_.store(false);
+    return true;
+}
+
+bool LibraryController::asyncRefreshRunning() const noexcept
+{
+    return scan_running_.load() || scan_done_.load();
+}
+
+void LibraryController::joinAsyncScan() noexcept
+{
+    if (scan_thread_.joinable()) {
+        scan_thread_.join();
+    }
 }
 
 void LibraryController::mergeRemoteTracks(const RemoteServerProfile& profile, const std::vector<RemoteTrack>& tracks)
@@ -122,7 +308,7 @@ void LibraryController::mergeRemoteTracks(const RemoteServerProfile& profile, co
         model.tracks.push_back(std::move(track));
     }
 
-    rebuildLibraryIndexes(model);
+    repository_.rebuildDerivedIndexes();
     setSongsContextAll();
 }
 
@@ -151,7 +337,7 @@ bool LibraryController::applyRemoteTrackFacts(const RemoteServerProfile& profile
     if (!remote_track.lyrics_synced.empty()) existing->lyrics_synced = remote_track.lyrics_synced;
     if (!remote_track.lyrics_source.empty()) existing->lyrics_source = remote_track.lyrics_source;
     if (!remote_track.fingerprint.empty()) existing->fingerprint = remote_track.fingerprint;
-    rebuildLibraryIndexes(model);
+    repository_.rebuildDerivedIndexes();
     return true;
 }
 

@@ -35,7 +35,7 @@ int main()
     };
     view.selected = 1;
 
-    lofibox::ui::pages::renderListPage(canvas, view);
+    lofibox::ui::pages::renderListPage(canvas, view, lofibox::ui::defaultTheme());
 
     constexpr int row_y = 28 + 21;
     constexpr int sample_x = 160;

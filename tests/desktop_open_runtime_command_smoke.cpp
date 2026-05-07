@@ -83,6 +83,7 @@ int main()
     lofibox::app::AppRuntimeContext app{
         {},
         {},
+        {},
         app_host,
         runtime_host.client(),
         {"https://example.test/desktop-open.mp3"}};

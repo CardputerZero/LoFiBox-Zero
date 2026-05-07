@@ -68,7 +68,7 @@ struct EqProfile {
     double balance{-0.0};
     bool loudness_enabled{false};
     double loudness_strength{0.0};
-    bool limiter_enabled{true};
+    bool limiter_enabled{false};
     double limiter_ceiling_db{-1.0};
     ReplayGainMode replaygain_mode{ReplayGainMode::Off};
     bool is_default{false};
@@ -82,8 +82,15 @@ struct ReplayGainProfile {
 };
 
 struct LimiterProfile {
-    bool enabled{true};
+    bool enabled{false};
     double ceiling_db{-1.0};
+};
+
+struct AudioEffectProfile {
+    std::string plugin_id{};
+    std::string effect_id{};
+    std::string name{};
+    double intensity{1.0};
 };
 
 struct DspChainProfile {
@@ -91,6 +98,7 @@ struct DspChainProfile {
     EqProfile eq{};
     ReplayGainProfile replay_gain{};
     LimiterProfile limiter{};
+    AudioEffectProfile effect{};
     double volume_db{0.0};
 };
 

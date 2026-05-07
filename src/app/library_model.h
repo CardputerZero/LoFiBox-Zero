@@ -19,6 +19,41 @@ enum class LibraryIndexState {
     Degraded,
 };
 
+enum class LibraryScanPhase {
+    Idle,
+    DiscoveringFiles,
+    ReadingMetadata,
+    BuildingIndexes,
+    Complete,
+    Failed,
+};
+
+[[nodiscard]] constexpr std::string_view libraryScanPhaseLabel(LibraryScanPhase phase) noexcept
+{
+    switch (phase) {
+    case LibraryScanPhase::Idle: return "IDLE";
+    case LibraryScanPhase::DiscoveringFiles: return "DISCOVERING FILES";
+    case LibraryScanPhase::ReadingMetadata: return "READING METADATA";
+    case LibraryScanPhase::BuildingIndexes: return "BUILDING INDEXES";
+    case LibraryScanPhase::Complete: return "COMPLETE";
+    case LibraryScanPhase::Failed: return "FAILED";
+    }
+    return "UNKNOWN";
+}
+
+struct LibraryScanProgress {
+    LibraryScanPhase phase{LibraryScanPhase::Idle};
+    int roots_total{0};
+    int roots_scanned{0};
+    int files_discovered{0};
+    int files_total{0};
+    int files_processed{0};
+    int tracks_indexed{0};
+    bool degraded{false};
+    std::string current_path{};
+    std::string message{};
+};
+
 enum class AlbumsMode {
     All,
     ByArtist,

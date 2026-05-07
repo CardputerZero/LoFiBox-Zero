@@ -7,6 +7,7 @@
 #include "ui/pages/now_playing_page.h"
 #include "core/canvas.h"
 #include "ui/ui_models.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::ui::pages {
 
@@ -22,6 +23,6 @@ struct LyricsPageView {
     SpectrumFrame visualization{};
 };
 
-void renderLyricsPage(core::Canvas& canvas, const LyricsPageView& view);
+void renderLyricsPage(core::Canvas& canvas, const LyricsPageView& view, const UiTheme& theme);
 
 } // namespace lofibox::ui::pages

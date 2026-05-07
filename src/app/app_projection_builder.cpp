@@ -19,7 +19,11 @@ constexpr std::string_view kNoGenres = "NO GENRES";
 constexpr std::string_view kNoComposers = "NO COMPOSERS";
 constexpr std::string_view kNoCompilations = "NO COMPILATIONS";
 constexpr std::string_view kEmpty = "EMPTY";
-constexpr std::string_view kVersion = "0.1.0";
+#if defined(LOFIBOX_VERSION)
+constexpr std::string_view kVersion{LOFIBOX_VERSION};
+#else
+constexpr std::string_view kVersion{"unknown"};
+#endif
 
 std::string formatStorage(const StorageInfo& storage)
 {
@@ -143,6 +147,7 @@ ui::pages::NowPlayingView buildNowPlayingProjection(const AppRenderTarget& targe
         playback.repeat_all,
         playback.repeat_one,
         playback.current_artwork ? &*playback.current_artwork : nullptr,
+        target.eqRuntimeSnapshot().effect_name,
         toUiSpectrumFrame(playback.visualization_frame)};
 }
 
@@ -181,13 +186,18 @@ ui::pages::ListPageView buildListProjection(const AppRenderTarget& target)
 
 ui::pages::AboutPageView buildAboutProjection(const AppRenderTarget& target)
 {
-    return ui_pages::AboutPageView{std::string(kVersion), formatStorage(target.storage())};
+    return ui_pages::AboutPageView{
+        std::string(kVersion),
+        formatStorage(target.storage()),
+        "GPL-3.0-or-later  (C) 2025-2026 Vic Liu",
+        "github.com/vicliu624/LoFiBox-Zero",
+    };
 }
 
 ui::pages::EqualizerPageView buildEqualizerProjection(const AppRenderTarget& target)
 {
     const auto eq = target.eqRuntimeSnapshot();
-    return ui_pages::EqualizerPageView{eq.bands, target.eqState().selected_band, eq.preset_name};
+    return ui_pages::EqualizerPageView{eq.bands, target.eqState().selected_band, eq.preset_name, eq.effect_name};
 }
 
 } // namespace lofibox::app

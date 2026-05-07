@@ -12,7 +12,22 @@ VIDEO_ITEM_TYPES = {"movie", "episode", "series", "musicvideo", "trailer", "vide
 
 
 def auth_header() -> str:
-    return 'MediaBrowser Client="LoFiBox Zero", Device="LoFiBox Zero", DeviceId="lofibox-zero", Version="0.1.0"'
+    try:
+        from version import LOFIBOX_VERSION
+    except ImportError:
+        LOFIBOX_VERSION = "0.0.0-dev"
+    return f'MediaBrowser Client="LoFiBox Zero", Device="LoFiBox Zero", DeviceId="lofibox-zero", Version="{LOFIBOX_VERSION}"'
+
+
+def profile_schema() -> Dict[str, Any]:
+    return {
+        "fields": [
+            {"name": "base_url", "type": "url", "required": True},
+            {"name": "username", "type": "string", "required": True},
+            {"name": "password", "type": "secret", "required": True},
+            {"name": "api_token", "type": "string", "required": False},
+        ]
+    }
 
 
 def probe(profile: Dict[str, Any]) -> Dict[str, Any]:

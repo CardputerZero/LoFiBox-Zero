@@ -13,6 +13,7 @@
 #include <string>
 #include <utility>
 
+#include <chrono>
 #include <fcntl.h>
 #include <linux/input.h>
 #include <unistd.h>
@@ -101,6 +102,14 @@ constexpr std::uint32_t kEvdevKeycodeOffset = 8U;
 [[nodiscard]] std::optional<app::InputEvent> translateSpecialKey(std::uint32_t keycode)
 {
     switch (keycode) {
+    case KEY_Z:
+        return app::InputEvent{app::InputKey::Left, "LEFT", '\0'};
+    case KEY_X:
+        return app::InputEvent{app::InputKey::Down, "DOWN", '\0'};
+    case KEY_C:
+        return app::InputEvent{app::InputKey::Right, "RIGHT", '\0'};
+    case KEY_S:
+        return app::InputEvent{app::InputKey::Up, "UP", '\0'};
     case KEY_BACKSPACE:
         return app::InputEvent{app::InputKey::Backspace, "BACK", '\0'};
     case KEY_DELETE:
@@ -318,6 +327,14 @@ struct LinuxEvdevKeyboard::Impl {
             const std::uint32_t keycode = static_cast<std::uint32_t>(event.code);
             const int value = event.value;
 
+            if (keycode == KEY_ESC) {
+                if (value == 1) {
+                    esc_press_time_ = std::chrono::steady_clock::now();
+                } else if (value == 0) {
+                    esc_press_time_ = {};
+                }
+            }
+
             if (value == 0) {
                 updateXkbState(state, keycode, value);
                 continue;
@@ -352,6 +369,7 @@ struct LinuxEvdevKeyboard::Impl {
     xkb_context* context{};
     xkb_keymap* keymap{};
     xkb_state* state{};
+    std::chrono::steady_clock::time_point esc_press_time_{};
 };
 
 LinuxEvdevKeyboard::LinuxEvdevKeyboard(std::string device_path, std::string xkb_layout)
@@ -364,6 +382,15 @@ LinuxEvdevKeyboard::~LinuxEvdevKeyboard() = default;
 bool LinuxEvdevKeyboard::available() const noexcept
 {
     return impl_ && impl_->fd >= 0;
+}
+
+std::chrono::milliseconds LinuxEvdevKeyboard::escHeldDuration() const noexcept
+{
+    if (!impl_ || impl_->esc_press_time_ == std::chrono::steady_clock::time_point{}) {
+        return std::chrono::milliseconds::zero();
+    }
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - impl_->esc_press_time_);
 }
 
 std::vector<app::InputEvent> LinuxEvdevKeyboard::drainInput()

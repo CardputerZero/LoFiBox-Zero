@@ -3,6 +3,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <vector>
 
 #include "app/library_model.h"
@@ -10,7 +11,12 @@
 
 namespace lofibox::app {
 
-[[nodiscard]] LibraryModel scanLibrary(const std::vector<std::filesystem::path>& requested_roots, const MetadataProvider& metadata_provider);
+using LibraryScanProgressCallback = std::function<void(const LibraryScanProgress&)>;
+
+[[nodiscard]] LibraryModel scanLibrary(
+    const std::vector<std::filesystem::path>& requested_roots,
+    const MetadataProvider& metadata_provider,
+    LibraryScanProgressCallback progress = {});
 void rebuildLibraryIndexes(LibraryModel& model);
 
 } // namespace lofibox::app

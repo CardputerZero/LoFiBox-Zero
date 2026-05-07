@@ -4,6 +4,7 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -12,12 +13,20 @@
 #include "cli/direct_cli.h"
 #include "cli/runtime_cli.h"
 #include "platform/host/legacy_asset_loader.h"
+#include "platform/host/runtime_paths.h"
 #include "platform/host/runtime_services_factory.h"
 #include "platform/host/single_instance_lock.h"
 #include "platform/device/linux_framebuffer_platform.h"
 #include "targets/cli_options.h"
 #if defined(LOFIBOX_HAVE_TUI)
 #include "tui/tui_app.h"
+#endif
+#if defined(LOFIBOX_HAVE_WEBUI)
+#include "platform/host/library_enrich_provider_adapter.h"
+#include "platform/host/library_query_provider_adapter.h"
+#include "webui/webui_config.h"
+#include "webui/webui_runtime_adapter.h"
+#include "webui/webui_server.h"
 #endif
 
 namespace {
@@ -85,6 +94,33 @@ int main(int argc, char** argv)
             return *direct_cli_exit;
         }
 
+        lofibox::app::AppStarter on_start;
+#if defined(LOFIBOX_HAVE_WEBUI)
+        lofibox::webui::WebUiConfig webui_config{};
+        lofibox::webui::parseWebUiFromArgs(argc, argv, webui_config);
+        if (webui_config.enabled) {
+            auto webui_ctx = std::make_shared<
+                std::pair<std::unique_ptr<lofibox::webui::WebUiRuntimeAdapter>,
+                          std::unique_ptr<lofibox::webui::WebUiServer>>>();
+            auto lib_provider = std::make_shared<lofibox::platform::host::LibraryQueryProviderAdapter>(
+                services.metadata.artwork_provider,
+                lofibox::platform::host::runtime_paths::appCacheDir());
+            auto enrich = std::make_shared<lofibox::platform::host::LibraryEnrichProviderAdapter>(services.cache.cache_manager);
+            auto active_theme = services.ui.theme;
+            on_start = [cfg = std::move(webui_config), webui_ctx, lib_provider, enrich, active_theme]
+                       (lofibox::runtime::RuntimeCommandClient& client,
+                        const ::lofibox::application::AppServiceRegistry& registry) mutable {
+                lib_provider->bind(registry.libraryQueries());
+                webui_ctx->first = std::make_unique<lofibox::webui::WebUiRuntimeAdapter>(client);
+                webui_ctx->second = std::make_unique<lofibox::webui::WebUiServer>(std::move(cfg), *webui_ctx->first);
+                webui_ctx->second->setLibraryQueryProvider(lib_provider.get());
+                webui_ctx->second->setLibraryEnrichProvider(enrich.get());
+                webui_ctx->second->setTheme(active_theme.get());
+                webui_ctx->second->start();
+            };
+        }
+#endif
+
         const DeviceOptions options = parseOptions(argc, argv);
         auto instance_lock = lofibox::platform::host::SingleInstanceLock::acquire();
         if (!instance_lock.acquired()) {
@@ -100,7 +136,9 @@ int main(int argc, char** argv)
             std::move(assets),
             std::move(services),
             std::chrono::milliseconds::zero(),
-            lofibox::targets::positionalOpenUris(argc, argv));
+            lofibox::targets::positionalOpenUris(argc, argv),
+            std::move(on_start)
+        );
         return 0;
     } catch (const std::exception& ex) {
         std::cerr << "Device startup failed: " << ex.what() << '\n';

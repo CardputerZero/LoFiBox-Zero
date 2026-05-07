@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "io.github.vicliu624.lofibox.theme.classic-dark",
+  "name": "Classic Dark",
+  "version": "1.0.0",
+  "api_version": "1",
+  "kind": "asset_pack",
+  "description": "Default LoFiBox Zero skin.",
+  "license": "GPL-3.0-or-later",
+  "capabilities": [
+    "ui.theme",
+    "ui.icons",
+    "ui.layout.now_playing",
+    "ui.layout.library",
+    "ui.layout.eq",
+    "ui.layout.lyrics"
+  ],
+  "resources": {
+    "skin": "skin.json"
+  },
+  "config": {
+    "skin": "skin.json"
+  },
+  "builtin": true
+}

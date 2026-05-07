@@ -26,6 +26,7 @@ It must not be used as a reason to delete product capabilities.
 For product meaning, use `lofibox-zero-final-product-spec.md`.
 For code ownership and layering, use `project-architecture-spec.md`.
 For dependency admission, use `dependency-policy-spec.md`.
+For version control and version propagation, use `lofibox-zero-version-control-spec.md`.
 For Linux desktop files and runtime integration, use `linux-desktop-integration-spec.md`.
 For copyright and resource governance, use `copyright-resource-governance-spec.md`.
 For tests and CI, use `testing-ci-spec.md`.

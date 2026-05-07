@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.1.0 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.0 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -33,12 +33,14 @@ endif()
 option(LOFIBOX_BUILD_DEVICE "Build the Linux framebuffer device target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_X11 "Build the Linux X11 VNC/PocketFrame target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_TUI "Build the ANSI terminal UI target." ON)
+option(LOFIBOX_BUILD_WEBUI "Build the WebUI remote-control HTTP/WebSocket server." OFF)
 
 add_library(lofibox_zero_core STATIC
     src/audio/audio_pipeline_controller.cpp
     src/cache/cache_manager.cpp
     src/audio/decoder/audio_decoder_contract.cpp
         src/audio/output/audio_output_contract.cpp
+    src/audio/dsp/audio_effect_registry.cpp
     src/audio/dsp/dsp_chain.cpp
     src/audio/dsp/realtime_dsp_engine.cpp
     src/app/input_actions.cpp
@@ -119,6 +121,10 @@ add_library(lofibox_zero_core STATIC
     src/remote/common/stream_source_model.cpp
         src/playlist/playlist_parser.cpp
         src/plugins/plugin_manifest.cpp
+        src/plugins/plugin_discovery.cpp
+        src/plugins/skin_plugin_adapter.cpp
+        src/plugins/plugin_runtime.cpp
+        src/plugins/remote_plugin_adapter.cpp
     src/desktop/desktop_integration_boundary.cpp
     src/security/credential_policy.cpp
     src/ui/ui_primitives.cpp
@@ -135,6 +141,7 @@ target_include_directories(lofibox_zero_core PUBLIC "${PROJECT_SOURCE_DIR}/src")
 target_compile_features(lofibox_zero_core PUBLIC cxx_std_20)
 target_link_libraries(lofibox_zero_core PUBLIC Threads::Threads)
 target_compile_definitions(lofibox_zero_core PUBLIC
+    LOFIBOX_VERSION="${PROJECT_VERSION}"
     LOFIBOX_ASSET_DIR="${PROJECT_SOURCE_DIR}/assets"
     LOFIBOX_SYSTEM_ASSET_DIR="${CMAKE_INSTALL_FULL_DATADIR}/lofibox/assets"
 )
@@ -149,6 +156,19 @@ if(MSVC)
     target_compile_options(lofibox_zero_core PRIVATE /W4 /permissive- /FS)
 else()
     target_compile_options(lofibox_zero_core PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_library(lofibox_zero_host_lock STATIC
+    src/platform/host/runtime_paths.cpp
+    src/platform/host/single_instance_lock.cpp
+)
+target_include_directories(lofibox_zero_host_lock PUBLIC "${PROJECT_SOURCE_DIR}/src")
+target_compile_features(lofibox_zero_host_lock PUBLIC cxx_std_20)
+target_link_libraries(lofibox_zero_host_lock PUBLIC Threads::Threads)
+if(MSVC)
+    target_compile_options(lofibox_zero_host_lock PRIVATE /W4 /permissive- /FS)
+else()
+    target_compile_options(lofibox_zero_host_lock PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_library(lofibox_zero_host_runtime STATIC
@@ -173,19 +193,17 @@ add_library(lofibox_zero_host_runtime STATIC
     src/platform/host/runtime_host_tools.cpp
     src/platform/host/runtime_logger.cpp
     src/platform/host/runtime_metadata_enrichment_orchestrator.cpp
-    src/platform/host/runtime_paths.cpp
     src/platform/host/runtime_process.cpp
     src/platform/host/runtime_remote_media_tool.cpp
     src/platform/host/runtime_script_bridge.cpp
     src/platform/host/runtime_services_factory.cpp
-    src/platform/host/single_instance_lock.cpp
     src/platform/host/tag_writer.cpp
     src/platform/host/track_identity_provider.cpp
     src/platform/host/xdg_remote_profile_store.cpp
 )
 target_include_directories(lofibox_zero_host_runtime PUBLIC "${PROJECT_SOURCE_DIR}/src")
 target_compile_features(lofibox_zero_host_runtime PUBLIC cxx_std_20)
-target_link_libraries(lofibox_zero_host_runtime PUBLIC lofibox_zero_core Threads::Threads)
+target_link_libraries(lofibox_zero_host_runtime PUBLIC lofibox_zero_host_lock lofibox_zero_core Threads::Threads)
 target_compile_definitions(lofibox_zero_host_runtime PRIVATE
     LOFIBOX_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
     LOFIBOX_INSTALLED_HELPER_DIR="${CMAKE_INSTALL_PREFIX}/${LOFIBOX_PRIVATE_LIBDIR}"
@@ -209,6 +227,27 @@ if(MSVC)
     target_compile_options(lofibox_zero_target_cli PRIVATE /W4 /permissive- /FS)
 else()
     target_compile_options(lofibox_zero_target_cli PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(LOFIBOX_BUILD_WEBUI)
+    add_library(lofibox_webui STATIC
+        src/webui/webui_json.cpp
+        src/webui/webui_config.cpp
+        src/webui/webui_runtime_adapter.cpp
+        src/webui/webui_projection.cpp
+        src/webui/webui_static_assets.cpp
+        src/webui/webui_http_router.cpp
+        src/webui/webui_ws_runtime_stream.cpp
+        src/webui/webui_server.cpp
+    )
+    target_include_directories(lofibox_webui PUBLIC "${PROJECT_SOURCE_DIR}/src")
+    target_compile_features(lofibox_webui PUBLIC cxx_std_20)
+    target_link_libraries(lofibox_webui PUBLIC lofibox_zero_core)
+    if(MSVC)
+        target_compile_options(lofibox_webui PRIVATE /W4 /permissive- /FS)
+    else()
+        target_compile_options(lofibox_webui PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 endif()
 
 if(LOFIBOX_BUILD_TUI)
@@ -289,6 +328,10 @@ if(LOFIBOX_BUILD_X11)
         target_link_libraries(lofibox_zero_x11 PRIVATE lofibox_zero_tui)
         target_compile_definitions(lofibox_zero_x11 PRIVATE LOFIBOX_HAVE_TUI=1)
     endif()
+    if(TARGET lofibox_webui)
+        target_link_libraries(lofibox_zero_x11 PRIVATE lofibox_zero_core lofibox_webui)
+        target_compile_definitions(lofibox_zero_x11 PRIVATE LOFIBOX_HAVE_WEBUI=1)
+    endif()
     install(TARGETS lofibox_zero_x11
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
@@ -311,11 +354,16 @@ if(LOFIBOX_BUILD_DEVICE)
     target_link_libraries(lofibox_zero_device PRIVATE
         lofibox_zero_host_runtime
         lofibox_zero_target_cli
+        lofibox_zero_core
         PkgConfig::XKBCOMMON
     )
     if(TARGET lofibox_zero_tui)
         target_link_libraries(lofibox_zero_device PRIVATE lofibox_zero_tui)
         target_compile_definitions(lofibox_zero_device PRIVATE LOFIBOX_HAVE_TUI=1)
+    endif()
+    if(TARGET lofibox_webui)
+        target_link_libraries(lofibox_zero_device PRIVATE lofibox_webui)
+        target_compile_definitions(lofibox_zero_device PRIVATE LOFIBOX_HAVE_WEBUI=1)
     endif()
     if(TARGET lofibox_zero_x11)
         install(TARGETS lofibox_zero_device
@@ -337,6 +385,21 @@ install(DIRECTORY assets/ui/icons/
     DESTINATION "${CMAKE_INSTALL_DATADIR}/lofibox/assets/ui/icons"
 )
 
+install(DIRECTORY data/plugins/
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/lofibox/plugins"
+)
+
+# Generated Python version module — single source of truth for Python helpers.
+configure_file(
+    "${PROJECT_SOURCE_DIR}/cmake/version.py.in"
+    "${CMAKE_BINARY_DIR}/generated/version.py"
+    @ONLY
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/generated/version.py"
+    DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
+)
+
 install(FILES scripts/tag_writer.py scripts/remote_media_tool.py
     DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
 )
@@ -350,6 +413,11 @@ install(DIRECTORY src/remote/
 
 install(FILES data/io.github.vicliu624.lofibox.desktop
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+)
+
+install(FILES data/lofibox-cardputer-zero.desktop
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/APPLaunch/applications"
+    RENAME lofibox.desktop
 )
 
 install(FILES data/io.github.vicliu624.lofibox.metainfo.xml
@@ -483,6 +551,14 @@ if(BUILD_TESTING)
     add_executable(lofibox_remote_browse_query_service_smoke tests/remote_browse_query_service_smoke.cpp)
     target_link_libraries(lofibox_remote_browse_query_service_smoke PRIVATE lofibox_zero_core)
     add_test(NAME lofibox_remote_browse_query_service_smoke COMMAND lofibox_remote_browse_query_service_smoke)
+
+    add_executable(lofibox_plugin_discovery_smoke tests/plugin_discovery_smoke.cpp)
+    target_link_libraries(lofibox_plugin_discovery_smoke PRIVATE lofibox_zero_core)
+    add_test(NAME lofibox_plugin_discovery_smoke COMMAND lofibox_plugin_discovery_smoke)
+
+    add_executable(lofibox_plugin_runtime_smoke tests/plugin_runtime_smoke.cpp)
+    target_link_libraries(lofibox_plugin_runtime_smoke PRIVATE lofibox_zero_core)
+    add_test(NAME lofibox_plugin_runtime_smoke COMMAND lofibox_plugin_runtime_smoke)
 
     add_executable(lofibox_direct_cli_smoke tests/direct_cli_smoke.cpp)
     target_link_libraries(lofibox_direct_cli_smoke PRIVATE lofibox_zero_target_cli)
@@ -667,8 +743,9 @@ if(BUILD_TESTING)
     add_test(NAME lofibox_lyrics_writeback_policy_smoke COMMAND lofibox_lyrics_writeback_policy_smoke)
 
     add_executable(lofibox_single_instance_lock_smoke tests/single_instance_lock_smoke.cpp)
-    target_link_libraries(lofibox_single_instance_lock_smoke PRIVATE lofibox_zero_host_runtime)
+    target_link_libraries(lofibox_single_instance_lock_smoke PRIVATE lofibox_zero_host_lock)
     add_test(NAME lofibox_single_instance_lock_smoke COMMAND lofibox_single_instance_lock_smoke)
+    set_tests_properties(lofibox_single_instance_lock_smoke PROPERTIES TIMEOUT 10)
 
     add_executable(lofibox_remote_media_smoke tests/remote_media_smoke.cpp)
     target_link_libraries(lofibox_remote_media_smoke PRIVATE lofibox_zero_host_runtime)
@@ -716,6 +793,10 @@ if(BUILD_TESTING)
     add_executable(lofibox_helper_script_path_smoke tests/helper_script_path_smoke.cpp)
     target_link_libraries(lofibox_helper_script_path_smoke PRIVATE lofibox_zero_host_runtime)
     add_test(NAME lofibox_helper_script_path_smoke COMMAND lofibox_helper_script_path_smoke)
+
+    if(TARGET lofibox_webui)
+        add_executable(lofibox_webui_smoke tests/webui_smoke.cpp)
+        target_link_libraries(lofibox_webui_smoke PRIVATE lofibox_webui)
+        add_test(NAME lofibox_webui_smoke COMMAND lofibox_webui_smoke)
+    endif()
   endif()
-
-

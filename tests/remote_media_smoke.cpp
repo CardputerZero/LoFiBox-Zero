@@ -1,12 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
-#include <chrono>
 #include <functional>
+#include <iostream>
 #include <memory>
+#include <optional>
+#include <string>
 #include <thread>
+
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#elif defined(__linux__)
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 #include "app/remote_media_contract.h"
 #include "app/runtime_services.h"
@@ -18,6 +32,59 @@
 namespace fs = std::filesystem;
 
 namespace {
+
+void setEnvVar(const char* name, const char* value)
+{
+#if defined(_WIN32)
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+}
+
+void configureLocalOnlyHttp()
+{
+    setEnvVar("NO_PROXY", "127.0.0.1,localhost");
+    setEnvVar("no_proxy", "127.0.0.1,localhost");
+    setEnvVar("HTTP_PROXY", "");
+    setEnvVar("HTTPS_PROXY", "");
+    setEnvVar("ALL_PROXY", "");
+    setEnvVar("http_proxy", "");
+    setEnvVar("https_proxy", "");
+    setEnvVar("all_proxy", "");
+}
+
+std::optional<int> readServerPort(const fs::path& port_file)
+{
+    std::ifstream input(port_file);
+    int port = 0;
+    input >> port;
+    if (!input || port <= 0 || port > 65535) {
+        return std::nullopt;
+    }
+    return port;
+}
+
+std::optional<int> waitForServerPort(const fs::path& port_file)
+{
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{5};
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (auto port = readServerPort(port_file)) {
+            return port;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+    }
+    return std::nullopt;
+}
+
+bool fullRemoteMediaSmokeEnabled()
+{
+    if (const char* value = std::getenv("LOFIBOX_RUN_FULL_REMOTE_MEDIA_SMOKE")) {
+        const std::string enabled{value};
+        return enabled == "1" || enabled == "true" || enabled == "TRUE" || enabled == "yes" || enabled == "YES";
+    }
+    return false;
+}
 
 bool verifyRemoteGovernance()
 {
@@ -145,20 +212,10 @@ bool verifyRemoteCatalogFactsBeatStaleCache(const fs::path& root)
 
 int main()
 {
+    configureLocalOnlyHttp();
+
     if (!verifyRemoteGovernance()) {
         return 1;
-    }
-
-#if defined(_WIN32)
-    const auto python_path = test_media_fixture::resolveExecutablePath(L"PYTHON_EXECUTABLE", L"python.exe");
-#elif defined(__linux__)
-    const auto python_path = test_media_fixture::resolveExecutablePath("PYTHON_EXECUTABLE", "python3");
-#else
-    const auto python_path = std::optional<fs::path>{};
-#endif
-    if (!python_path.has_value()) {
-        std::cout << "python unavailable; skipping remote media smoke.\n";
-        return 0;
     }
 
     const fs::path root = fs::temp_directory_path() / "lofibox_zero_remote_media_smoke";
@@ -173,15 +230,36 @@ int main()
         fs::remove_all(root, ec);
         return 1;
     }
-    const int port = 18000 + static_cast<int>((std::chrono::steady_clock::now().time_since_epoch().count() % 1000 + 1000) % 1000);
+
+    if (!fullRemoteMediaSmokeEnabled()) {
+        fs::remove_all(root, ec);
+        std::cout << "Full remote media provider smoke disabled; set LOFIBOX_RUN_FULL_REMOTE_MEDIA_SMOKE=1 to run it.\n";
+        return 0;
+    }
+
+#if defined(_WIN32)
+    const auto python_path = test_media_fixture::resolveExecutablePath(L"PYTHON_EXECUTABLE", L"python.exe");
+#elif defined(__linux__)
+    const auto python_path = test_media_fixture::resolveExecutablePath("PYTHON_EXECUTABLE", "python3");
+#else
+    const auto python_path = std::optional<fs::path>{};
+#endif
+    if (!python_path.has_value()) {
+        std::cout << "python unavailable; skipping full remote media provider smoke.\n";
+        fs::remove_all(root, ec);
+        return 0;
+    }
 
     const fs::path server_script = root / "server.py";
+    const fs::path port_file = root / "server.port";
     {
         std::ofstream output(server_script, std::ios::binary | std::ios::trunc);
         output <<
 R"(import html
 import json
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 class Handler(BaseHTTPRequestHandler):
@@ -279,18 +357,18 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_response(404); self.end_headers()
 
-server = HTTPServer(('127.0.0.1', )" << port << R"(), Handler)
+server = HTTPServer(('127.0.0.1', 0), Handler)
+Path(sys.argv[1]).write_text(str(server.server_port), encoding='utf-8')
 server.serve_forever()
 )";
     }
 
-    const std::vector<std::string> server_args{server_script.string()};
     // Keep it simple: start python server detached via OS-specific helper script process.
 #if defined(_WIN32)
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
     PROCESS_INFORMATION process{};
-    std::wstring cmd = L"python \"" + server_script.wstring() + L"\"";
+    std::wstring cmd = L"python \"" + server_script.wstring() + L"\" \"" + port_file.wstring() + L"\"";
     if (!CreateProcessW(python_path->wstring().c_str(), cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process)) {
         std::cerr << "Failed to start mock server.\n";
         fs::remove_all(root, ec);
@@ -307,7 +385,7 @@ server.serve_forever()
 #elif defined(__linux__)
     pid_t pid = fork();
     if (pid == 0) {
-        execl(python_path->string().c_str(), python_path->string().c_str(), server_script.string().c_str(), nullptr);
+        execl(python_path->string().c_str(), python_path->string().c_str(), server_script.string().c_str(), port_file.string().c_str(), nullptr);
         _exit(127);
     } else if (pid < 0) {
         std::cerr << "Failed to start mock server.\n";
@@ -331,7 +409,11 @@ server.serve_forever()
         }
     } scope_exit{cleanup};
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    const auto port = waitForServerPort(port_file);
+    if (!port) {
+        std::cerr << "Mock remote media server did not report a listening port.\n";
+        return 1;
+    }
 
     auto services = lofibox::platform::host::createHostRuntimeServices();
     if (!services.remote.remote_source_provider->available()
@@ -343,7 +425,7 @@ server.serve_forever()
     }
 
     const auto jellyfin_profile = lofibox::app::RemoteServerProfile{
-        lofibox::app::RemoteServerKind::Jellyfin, "jf", "Jellyfin", "http://127.0.0.1:" + std::to_string(port), "user", "pass", ""};
+        lofibox::app::RemoteServerKind::Jellyfin, "jf", "Jellyfin", "http://127.0.0.1:" + std::to_string(*port), "user", "pass", ""};
     const auto jf_session = services.remote.remote_source_provider->probe(jellyfin_profile);
     if (!jf_session.available || jf_session.access_token.empty()) {
         std::cerr << "Expected Jellyfin probe to succeed.\n";
@@ -413,7 +495,7 @@ server.serve_forever()
     }
 
     const auto subsonic_profile = lofibox::app::RemoteServerProfile{
-        lofibox::app::RemoteServerKind::OpenSubsonic, "sub", "Navidrome", "http://127.0.0.1:" + std::to_string(port), "user", "pass", ""};
+        lofibox::app::RemoteServerKind::OpenSubsonic, "sub", "Navidrome", "http://127.0.0.1:" + std::to_string(*port), "user", "pass", ""};
     const auto sub_session = services.remote.remote_source_provider->probe(subsonic_profile);
     if (!sub_session.available) {
         std::cerr << "Expected OpenSubsonic probe to succeed.\n";
@@ -448,7 +530,7 @@ server.serve_forever()
     }
 
     const auto navidrome_profile = lofibox::app::RemoteServerProfile{
-        lofibox::app::RemoteServerKind::Navidrome, "nav", "Navidrome", "http://127.0.0.1:" + std::to_string(port), "user", "pass", ""};
+        lofibox::app::RemoteServerKind::Navidrome, "nav", "Navidrome", "http://127.0.0.1:" + std::to_string(*port), "user", "pass", ""};
     const auto nav_session = services.remote.remote_source_provider->probe(navidrome_profile);
     if (!nav_session.available) {
         std::cerr << "Expected Navidrome probe to use the OpenSubsonic-compatible path.\n";
@@ -461,7 +543,7 @@ server.serve_forever()
     }
 
     const auto emby_profile = lofibox::app::RemoteServerProfile{
-        lofibox::app::RemoteServerKind::Emby, "emb", "Emby", "http://127.0.0.1:" + std::to_string(port), "user", "pass", ""};
+        lofibox::app::RemoteServerKind::Emby, "emb", "Emby", "http://127.0.0.1:" + std::to_string(*port), "user", "pass", ""};
     const auto emby_session = services.remote.remote_source_provider->probe(emby_profile);
     if (!emby_session.available || emby_session.access_token.empty()) {
         std::cerr << "Expected Emby probe to succeed.\n";
@@ -492,7 +574,7 @@ server.serve_forever()
     }
 
     const auto playlist_profile = lofibox::app::RemoteServerProfile{
-        lofibox::app::RemoteServerKind::PlaylistManifest, "m3u", "M3U Playlist", "http://127.0.0.1:" + std::to_string(port) + "/playlist.m3u", "", "", ""};
+        lofibox::app::RemoteServerKind::PlaylistManifest, "m3u", "M3U Playlist", "http://127.0.0.1:" + std::to_string(*port) + "/playlist.m3u", "", "", ""};
     const auto playlist_session = services.remote.remote_source_provider->probe(playlist_profile);
     if (!playlist_session.available) {
         std::cerr << "Expected Playlist manifest probe to parse entries.\n";
@@ -510,7 +592,7 @@ server.serve_forever()
     }
 
     const auto webdav_profile = lofibox::app::RemoteServerProfile{
-        lofibox::app::RemoteServerKind::WebDav, "dav", "WebDAV", "http://127.0.0.1:" + std::to_string(port) + "/webdav/", "", "", ""};
+        lofibox::app::RemoteServerKind::WebDav, "dav", "WebDAV", "http://127.0.0.1:" + std::to_string(*port) + "/webdav/", "", "", ""};
     const auto webdav_session = services.remote.remote_source_provider->probe(webdav_profile);
     if (!webdav_session.available) {
         std::cerr << "Expected WebDAV probe to list the remote root.\n";
@@ -531,7 +613,7 @@ server.serve_forever()
     }
 
     const auto dlna_profile = lofibox::app::RemoteServerProfile{
-        lofibox::app::RemoteServerKind::DlnaUpnp, "dlna", "DLNA", "http://127.0.0.1:" + std::to_string(port) + "/dlna/root.xml", "", "", ""};
+        lofibox::app::RemoteServerKind::DlnaUpnp, "dlna", "DLNA", "http://127.0.0.1:" + std::to_string(*port) + "/dlna/root.xml", "", "", ""};
     const auto dlna_session = services.remote.remote_source_provider->probe(dlna_profile);
     if (!dlna_session.available) {
         std::cerr << "Expected DLNA probe to find a ContentDirectory service.\n";

@@ -1,0 +1,32 @@
+{
+  "screen": {
+    "target_width": 320,
+    "target_height": 170
+  },
+  "palette": {
+    "background": "#050608",
+    "panel0": "#0a0c0f",
+    "panel": "#101318",
+    "panel2": "#171b21",
+    "chrome_topbar0": "#2b2e33",
+    "chrome_topbar1": "#101317",
+    "divider": "#2a2f36",
+    "text_primary": "#f5f7fa",
+    "text_secondary": "#c7cdd3",
+    "text_muted": "#8d949c",
+    "focus_fill": "#2f86ff",
+    "focus_edge": "#a9dbff",
+    "progress": "#58a8ff",
+    "progress_strong": "#2f75ff",
+    "good": "#87d96c",
+    "warn": "#e6b34a",
+    "bad": "#d66a5f"
+  },
+  "spacing": {
+    "top_bar_height": 20,
+    "list_top": 28,
+    "list_row_height": 21,
+    "max_visible_rows": 6,
+    "list_inset": 8
+  }
+}

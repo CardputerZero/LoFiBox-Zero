@@ -71,6 +71,11 @@ struct EqRuntimeSnapshot {
     std::array<int, 10> bands{};
     std::string preset_name{"FLAT"};
     bool enabled{false};
+    std::string effect_plugin_id{};
+    std::string effect_id{};
+    std::string effect_name{"OFF"};
+    double effect_intensity{1.0};
+    bool effect_enabled{false};
     std::uint64_t version{0};
 };
 
@@ -138,6 +143,15 @@ struct LibraryRuntimeSnapshot {
     int artist_count{0};
     int genre_count{0};
     std::string status{"UNINITIALIZED"};
+    std::string scan_phase{"IDLE"};
+    std::string scan_message{};
+    std::string scan_current_path{};
+    int scan_roots_total{0};
+    int scan_roots_scanned{0};
+    int scan_files_discovered{0};
+    int scan_files_total{0};
+    int scan_files_processed{0};
+    int scan_tracks_indexed{0};
     std::uint64_t version{0};
 };
 
@@ -186,6 +200,14 @@ struct CreatorRuntimeSnapshot {
     std::uint64_t version{0};
 };
 
+struct PluginRuntimeSnapshot {
+    int loaded_count{0};
+    std::string selected_skin_id{};
+    std::vector<std::string> loaded_plugin_ids{};
+    std::vector<std::string> warnings{};
+    std::uint64_t version{0};
+};
+
 struct RuntimeSnapshot {
     PlaybackRuntimeSnapshot playback{};
     QueueRuntimeSnapshot queue{};
@@ -198,6 +220,7 @@ struct RuntimeSnapshot {
     SourceRuntimeSnapshot sources{};
     DiagnosticsRuntimeSnapshot diagnostics{};
     CreatorRuntimeSnapshot creator{};
+    PluginRuntimeSnapshot plugins{};
     std::uint64_t version{0};
 };
 

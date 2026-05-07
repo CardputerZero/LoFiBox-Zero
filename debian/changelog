@@ -1,5 +1,7 @@
-lofibox (0.1.0-1) UNRELEASED; urgency=medium
+lofibox (0.2.0-1) UNRELEASED; urgency=medium
 
-  * Initial Debian packaging skeleton.
+  * New upstream release 0.2.0.
+  * WebUI remote-control HTTP/WebSocket server.
+  * Fix version propagation: single source of truth from CMake to all consumers.
 
- -- LoFiBox contributors <maintainers@example.invalid>  Sun, 26 Apr 2026 00:00:00 +0800
+ -- LoFiBox contributors <maintainers@example.invalid>  Tue, 05 May 2026 00:00:00 +0800

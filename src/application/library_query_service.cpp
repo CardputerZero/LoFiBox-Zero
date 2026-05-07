@@ -55,6 +55,11 @@ const app::LibraryModel& LibraryQueryService::model() const noexcept
     return controller_.model();
 }
 
+app::LibraryScanProgress LibraryQueryService::scanProgress() const
+{
+    return controller_.scanProgress();
+}
+
 const app::TrackRecord* LibraryQueryService::findTrack(int id) const noexcept
 {
     return controller_.findTrack(id);

@@ -5,6 +5,8 @@
 #include "library/library_governance.h"
 #include "library/library_indexer.h"
 
+#include <utility>
+
 namespace lofibox::app {
 
 LibraryIndexState LibraryRepository::state() const noexcept
@@ -37,10 +39,31 @@ void LibraryRepository::markLoading() noexcept
     state_ = LibraryIndexState::Loading;
 }
 
-void LibraryRepository::rescan(const std::vector<std::filesystem::path>& media_roots, const MetadataProvider& metadata_provider)
+void LibraryRepository::markDegraded() noexcept
+{
+    library_.degraded = true;
+    state_ = LibraryIndexState::Degraded;
+}
+
+void LibraryRepository::rescan(
+    const std::vector<std::filesystem::path>& media_roots,
+    const MetadataProvider& metadata_provider,
+    LibraryScanProgressCallback progress)
+{
+    applyRescanModel(rebuildModel(media_roots, metadata_provider, std::move(progress)));
+}
+
+LibraryModel LibraryRepository::rebuildModel(
+    const std::vector<std::filesystem::path>& media_roots,
+    const MetadataProvider& metadata_provider,
+    LibraryScanProgressCallback progress) const
+{
+    return library::LibraryIndexer{}.rebuild(media_roots, metadata_provider, std::move(progress));
+}
+
+void LibraryRepository::applyRescanModel(LibraryModel next)
 {
     const auto before = library_;
-    auto next = library::LibraryIndexer{}.rebuild(media_roots, metadata_provider);
     std::vector<std::filesystem::path> current_files{};
     current_files.reserve(next.tracks.size());
     for (const auto& track : next.tracks) {
@@ -51,6 +74,11 @@ void LibraryRepository::rescan(const std::vector<std::filesystem::path>& media_r
     migration_plan_ = governance.migrationPlan(1, 1);
     library_ = std::move(next);
     state_ = library_.degraded ? LibraryIndexState::Degraded : LibraryIndexState::Ready;
+}
+
+void LibraryRepository::rebuildDerivedIndexes()
+{
+    rebuildLibraryIndexes(library_);
 }
 
 const TrackRecord* LibraryRepository::findTrack(int id) const noexcept

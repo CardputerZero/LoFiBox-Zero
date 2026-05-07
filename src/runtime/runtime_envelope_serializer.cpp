@@ -21,7 +21,7 @@ struct EnumName {
     std::string_view name;
 };
 
-constexpr std::array<EnumName<RuntimeCommandKind>, 29> kCommandNames{{
+constexpr std::array<EnumName<RuntimeCommandKind>, 30> kCommandNames{{
     {RuntimeCommandKind::PlaybackPlay, "PlaybackPlay"},
     {RuntimeCommandKind::PlaybackPause, "PlaybackPause"},
     {RuntimeCommandKind::PlaybackResume, "PlaybackResume"},
@@ -47,6 +47,7 @@ constexpr std::array<EnumName<RuntimeCommandKind>, 29> kCommandNames{{
     {RuntimeCommandKind::EqApplyPreset, "EqApplyPreset"},
     {RuntimeCommandKind::EqCyclePreset, "EqCyclePreset"},
     {RuntimeCommandKind::EqReset, "EqReset"},
+    {RuntimeCommandKind::AudioEffectCycle, "AudioEffectCycle"},
     {RuntimeCommandKind::RemoteReconnect, "RemoteReconnect"},
     {RuntimeCommandKind::SettingsApplyLive, "SettingsApplyLive"},
     {RuntimeCommandKind::RuntimeShutdown, "RuntimeShutdown"},
@@ -385,6 +386,9 @@ void appendPayload(std::ostringstream& out, const RuntimeCommandPayload& payload
         } else if constexpr (std::is_same_v<Payload, PlaybackStartTrackPayload>) {
             appendStringField(out, "payload", "PlaybackStartTrack");
             out << ",\"track_id\":" << data.track_id;
+            if (!data.album.empty()) out << ",\"album\":\"" << escapeJson(data.album) << '"';
+            if (!data.artist.empty()) out << ",\"artist\":\"" << escapeJson(data.artist) << '"';
+            if (!data.genre.empty()) out << ",\"genre\":\"" << escapeJson(data.genre) << '"';
         } else if constexpr (std::is_same_v<Payload, PlaybackSeekPayload>) {
             appendStringField(out, "payload", "PlaybackSeek");
             out << ",\"seconds\":" << data.seconds;
@@ -413,6 +417,10 @@ void appendPayload(std::ostringstream& out, const RuntimeCommandPayload& payload
         } else if constexpr (std::is_same_v<Payload, EqApplyPresetPayload>) {
             appendStringField(out, "payload", "EqApplyPreset");
             appendStringField(out, "preset_name", data.preset_name);
+        } else if constexpr (std::is_same_v<Payload, AudioEffectCyclePayload>) {
+            appendStringField(out, "payload", "AudioEffectCycle");
+            appendStringField(out, "plugin_id", data.plugin_id);
+            out << ",\"delta\":" << data.delta;
         } else if constexpr (std::is_same_v<Payload, SettingsApplyLivePayload>) {
             appendStringField(out, "payload", "SettingsApplyLive");
             appendStringField(out, "output_mode", data.output_mode);
@@ -433,7 +441,11 @@ RuntimeCommandPayload parsePayload(std::string_view json)
 {
     const auto payload = stringField(json, "payload").value_or("Empty");
     if (payload == "PlaybackStartTrack") {
-        return RuntimeCommandPayload::startTrack(numberField<int>(json, "track_id").value_or(0));
+        return RuntimeCommandPayload::startTrack(
+            numberField<int>(json, "track_id").value_or(0),
+            stringField(json, "album").value_or(std::string{}),
+            stringField(json, "artist").value_or(std::string{}),
+            stringField(json, "genre").value_or(std::string{}));
     }
     if (payload == "PlaybackSeek") {
         return RuntimeCommandPayload::seek(numberField<double>(json, "seconds").value_or(0.0));
@@ -463,6 +475,11 @@ RuntimeCommandPayload parsePayload(std::string_view json)
     }
     if (payload == "EqApplyPreset") {
         return RuntimeCommandPayload::eqApplyPreset(stringField(json, "preset_name").value_or(std::string{}));
+    }
+    if (payload == "AudioEffectCycle") {
+        return RuntimeCommandPayload::audioEffectCycle(
+            stringField(json, "plugin_id").value_or(std::string{}),
+            numberField<int>(json, "delta").value_or(1));
     }
     if (payload == "SettingsApplyLive") {
         return RuntimeCommandPayload::settingsApplyLive(
@@ -541,6 +558,11 @@ void appendSnapshot(std::ostringstream& out, const RuntimeSnapshot& snapshot)
     appendIntArray(out, "eq_bands", snapshot.eq.bands);
     appendStringField(out, "eq_preset_name", snapshot.eq.preset_name);
     appendBoolField(out, "eq_enabled", snapshot.eq.enabled);
+    appendStringField(out, "eq_effect_plugin_id", snapshot.eq.effect_plugin_id);
+    appendStringField(out, "eq_effect_id", snapshot.eq.effect_id);
+    appendStringField(out, "eq_effect_name", snapshot.eq.effect_name);
+    out << ",\"eq_effect_intensity\":" << snapshot.eq.effect_intensity;
+    appendBoolField(out, "eq_effect_enabled", snapshot.eq.effect_enabled);
     appendStringField(out, "remote_profile_id", snapshot.remote.profile_id);
     appendStringField(out, "remote_source_label", snapshot.remote.source_label);
     appendStringField(out, "remote_connection_status", snapshot.remote.connection_status);
@@ -587,6 +609,15 @@ void appendSnapshot(std::ostringstream& out, const RuntimeSnapshot& snapshot)
         << ",\"library_artist_count\":" << snapshot.library.artist_count
         << ",\"library_genre_count\":" << snapshot.library.genre_count;
     appendStringField(out, "library_status", snapshot.library.status);
+    appendStringField(out, "library_scan_phase", snapshot.library.scan_phase);
+    appendStringField(out, "library_scan_message", snapshot.library.scan_message);
+    appendStringField(out, "library_scan_current_path", snapshot.library.scan_current_path);
+    out << ",\"library_scan_roots_total\":" << snapshot.library.scan_roots_total
+        << ",\"library_scan_roots_scanned\":" << snapshot.library.scan_roots_scanned
+        << ",\"library_scan_files_discovered\":" << snapshot.library.scan_files_discovered
+        << ",\"library_scan_files_total\":" << snapshot.library.scan_files_total
+        << ",\"library_scan_files_processed\":" << snapshot.library.scan_files_processed
+        << ",\"library_scan_tracks_indexed\":" << snapshot.library.scan_tracks_indexed;
     out << ",\"source_configured_count\":" << snapshot.sources.configured_count;
     appendStringField(out, "source_active_profile_id", snapshot.sources.active_profile_id);
     appendStringField(out, "source_active_label", snapshot.sources.active_source_label);
@@ -620,6 +651,10 @@ void appendSnapshot(std::ostringstream& out, const RuntimeSnapshot& snapshot)
     appendStringField(out, "creator_analysis_source", snapshot.creator.analysis_source);
     appendStringField(out, "creator_confidence", snapshot.creator.confidence);
     appendStringField(out, "creator_status_message", snapshot.creator.status_message);
+    out << ",\"plugins_loaded_count\":" << snapshot.plugins.loaded_count;
+    appendStringField(out, "plugins_selected_skin_id", snapshot.plugins.selected_skin_id);
+    appendStringArray(out, "plugins_loaded_plugin_ids", snapshot.plugins.loaded_plugin_ids);
+    appendStringArray(out, "plugins_warnings", snapshot.plugins.warnings);
 }
 
 RuntimeSnapshot parseSnapshot(std::string_view json)
@@ -681,6 +716,11 @@ RuntimeSnapshot parseSnapshot(std::string_view json)
     }
     snapshot.eq.preset_name = stringField(json, "eq_preset_name").value_or("FLAT");
     snapshot.eq.enabled = boolField(json, "eq_enabled").value_or(false);
+    snapshot.eq.effect_plugin_id = stringField(json, "eq_effect_plugin_id").value_or(std::string{});
+    snapshot.eq.effect_id = stringField(json, "eq_effect_id").value_or(std::string{});
+    snapshot.eq.effect_name = stringField(json, "eq_effect_name").value_or(snapshot.eq.effect_id.empty() ? std::string{"OFF"} : snapshot.eq.effect_id);
+    snapshot.eq.effect_intensity = numberField<double>(json, "eq_effect_intensity").value_or(1.0);
+    snapshot.eq.effect_enabled = boolField(json, "eq_effect_enabled").value_or(!snapshot.eq.effect_id.empty());
     snapshot.remote.profile_id = stringField(json, "remote_profile_id").value_or(std::string{});
     snapshot.remote.source_label = stringField(json, "remote_source_label").value_or("REMOTE");
     snapshot.remote.connection_status = stringField(json, "remote_connection_status").value_or("UNKNOWN");
@@ -734,6 +774,15 @@ RuntimeSnapshot parseSnapshot(std::string_view json)
     snapshot.library.artist_count = numberField<int>(json, "library_artist_count").value_or(0);
     snapshot.library.genre_count = numberField<int>(json, "library_genre_count").value_or(0);
     snapshot.library.status = stringField(json, "library_status").value_or("UNINITIALIZED");
+    snapshot.library.scan_phase = stringField(json, "library_scan_phase").value_or("IDLE");
+    snapshot.library.scan_message = stringField(json, "library_scan_message").value_or(std::string{});
+    snapshot.library.scan_current_path = stringField(json, "library_scan_current_path").value_or(std::string{});
+    snapshot.library.scan_roots_total = numberField<int>(json, "library_scan_roots_total").value_or(0);
+    snapshot.library.scan_roots_scanned = numberField<int>(json, "library_scan_roots_scanned").value_or(0);
+    snapshot.library.scan_files_discovered = numberField<int>(json, "library_scan_files_discovered").value_or(0);
+    snapshot.library.scan_files_total = numberField<int>(json, "library_scan_files_total").value_or(0);
+    snapshot.library.scan_files_processed = numberField<int>(json, "library_scan_files_processed").value_or(0);
+    snapshot.library.scan_tracks_indexed = numberField<int>(json, "library_scan_tracks_indexed").value_or(0);
     snapshot.sources.configured_count = numberField<int>(json, "source_configured_count").value_or(0);
     snapshot.sources.active_profile_id = stringField(json, "source_active_profile_id").value_or(std::string{});
     snapshot.sources.active_source_label = stringField(json, "source_active_label").value_or(std::string{});
@@ -770,6 +819,13 @@ RuntimeSnapshot parseSnapshot(std::string_view json)
     snapshot.creator.analysis_source = stringField(json, "creator_analysis_source").value_or(std::string{});
     snapshot.creator.confidence = stringField(json, "creator_confidence").value_or(std::string{});
     snapshot.creator.status_message = stringField(json, "creator_status_message").value_or("Creator analysis unavailable");
+    snapshot.plugins.loaded_count = numberField<int>(json, "plugins_loaded_count").value_or(0);
+    snapshot.plugins.selected_skin_id = stringField(json, "plugins_selected_skin_id").value_or(std::string{});
+    snapshot.plugins.loaded_plugin_ids = stringArrayField(json, "plugins_loaded_plugin_ids");
+    snapshot.plugins.warnings = stringArrayField(json, "plugins_warnings");
+    if (snapshot.plugins.loaded_count == 0 && !snapshot.plugins.loaded_plugin_ids.empty()) {
+        snapshot.plugins.loaded_count = static_cast<int>(snapshot.plugins.loaded_plugin_ids.size());
+    }
     return snapshot;
 }
 

@@ -19,6 +19,7 @@ public:
     [[nodiscard]] bool adjustBand(int band_index, int delta_db);
     [[nodiscard]] bool applyPreset(std::string_view preset_name);
     [[nodiscard]] bool cyclePreset(int delta);
+    [[nodiscard]] bool cycleAudioEffect(std::string_view plugin_id, int delta);
     void reset();
     [[nodiscard]] EqRuntimeSnapshot snapshot(std::uint64_t version) const;
 

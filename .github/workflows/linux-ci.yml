@@ -12,7 +12,7 @@ on:
 jobs:
   build-and-test:
     name: Build And Test On Linux
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Check Out Repository
@@ -43,7 +43,6 @@ jobs:
             g++ \
             lintian \
             ninja-build \
-            pkg-config \
             libfreetype6-dev \
             libxkbcommon-dev \
             libx11-dev \
@@ -93,10 +92,22 @@ jobs:
         run: cmake --build --preset linux-device-debug-build
 
       - name: Build Debian Package
-        run: dpkg-buildpackage -us -uc -b
+        run: |
+          sudo apt-get build-dep -y .
+          dpkg-checkbuilddeps
+          dpkg-buildpackage -us -uc -b
+
+      - name: Verify Debian Package ABI Baseline
+        run: |
+          dpkg-deb -f ../lofibox_0.2.0-1_amd64.deb Depends
+          dpkg-deb -f ../lofibox_0.2.0-1_amd64.deb Depends | tee /tmp/lofibox-depends.txt
+          if grep -E 'libc6 \(>= 2\.(3[8-9]|[4-9][0-9])' /tmp/lofibox-depends.txt; then
+            echo "ERROR: Package requires too new glibc. Build on an older baseline."
+            exit 1
+          fi
 
       - name: Run Lintian
-        run: lintian ../lofibox_0.1.0-1_amd64.changes
+        run: lintian ../lofibox_0.2.0-1_amd64.changes
 
       - name: Run Autopkgtest Smoke
-        run: sudo autopkgtest ../lofibox_0.1.0-1_amd64.changes -- null
+        run: sudo autopkgtest ../lofibox_0.2.0-1_amd64.changes -- null

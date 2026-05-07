@@ -9,6 +9,7 @@
 
 #include "core/canvas.h"
 #include "ui/ui_models.h"
+#include "ui/ui_theme.h"
 
 namespace lofibox::ui::pages {
 
@@ -35,6 +36,6 @@ struct MainMenuView {
     int playback_summary_scroll_px{0};
 };
 
-void renderMainMenuPage(core::Canvas& canvas, const MainMenuView& view);
+void renderMainMenuPage(core::Canvas& canvas, const MainMenuView& view, const UiTheme& theme);
 
 } // namespace lofibox::ui::pages

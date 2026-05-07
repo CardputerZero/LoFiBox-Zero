@@ -8,7 +8,6 @@
 
 #include "core/display_profile.h"
 #include "ui/ui_primitives.h"
-#include "ui/ui_theme.h"
 
 namespace lofibox::ui::effects {
 namespace {

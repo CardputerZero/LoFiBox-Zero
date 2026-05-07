@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+﻿// SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "platform/host/runtime_remote_media_tool.h"
 
+#include <algorithm>
+#include <cstdlib>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -11,6 +14,9 @@
 
 #include "platform/host/runtime_host_internal.h"
 #include "platform/host/runtime_logger.h"
+#include "platform/host/runtime_paths.h"
+#include "plugins/plugin_discovery.h"
+#include "plugins/plugin_manifest.h"
 #include "remote/common/stream_source_model.h"
 #include "security/credential_policy.h"
 
@@ -24,7 +30,7 @@ std::string toKindString(app::RemoteServerKind kind)
     switch (kind) {
     case app::RemoteServerKind::Jellyfin: return "jellyfin";
     case app::RemoteServerKind::OpenSubsonic: return "opensubsonic";
-    case app::RemoteServerKind::Navidrome: return "opensubsonic";
+    case app::RemoteServerKind::Navidrome: return "navidrome";
     case app::RemoteServerKind::Emby: return "emby";
     case app::RemoteServerKind::DirectUrl: return "direct-url";
     case app::RemoteServerKind::InternetRadio: return "internet-radio";
@@ -52,6 +58,38 @@ bool handledLocally(app::RemoteServerKind kind) noexcept
     default:
         return false;
     }
+}
+
+std::vector<fs::path> pluginSearchDirs()
+{
+    std::vector<fs::path> dirs;
+    if (const char* env = std::getenv("LOFIBOX_PLUGIN_DIR"); env != nullptr && *env != '\0') {
+        dirs.emplace_back(env);
+    }
+    dirs.push_back(projectRoot() / "data" / "plugins");
+    dirs.push_back(runtime_paths::appDataDir() / "plugins");
+#if !defined(_WIN32)
+    dirs.emplace_back("/usr/share/lofibox/plugins");
+#endif
+    return dirs;
+}
+
+std::string remotePluginShortName(std::string_view plugin_id)
+{
+    const auto dot = plugin_id.rfind('.');
+    return dot == std::string_view::npos ? std::string{plugin_id} : std::string{plugin_id.substr(dot + 1)};
+}
+
+std::string pluginLogId(std::string plugin_id)
+{
+    std::replace(plugin_id.begin(), plugin_id.end(), '.', '_');
+    std::replace(plugin_id.begin(), plugin_id.end(), '/', '_');
+    return plugin_id;
+}
+
+bool legacyToolAvailable(const std::optional<fs::path>& python_path)
+{
+    return python_path.has_value() && fs::exists(remoteMediaToolScriptPath());
 }
 
 app::StreamProtocol protocolFromDirectEntry(const ::lofibox::remote::DirectStreamEntry& entry) noexcept
@@ -308,11 +346,76 @@ app::ResolvedRemoteStream localResolvedStream(const app::RemoteServerProfile& pr
 RemoteMediaToolClient::RemoteMediaToolClient()
 {
     python_path_ = resolvePythonPath();
+    plugins::PluginRegistry registry;
+    registry.discover(pluginSearchDirs());
+    for (const auto& manifest : registry.manifests()) {
+        if (manifest.kind == plugins::PluginKind::ExternalHelper
+            && plugins::manifestHasCapability(manifest, "remote.source")
+            && manifest.entry) {
+            remote_plugins_.push_back(manifest);
+        }
+    }
 }
 
 bool RemoteMediaToolClient::available() const
 {
-    return python_path_.has_value() && fs::exists(remoteMediaToolScriptPath());
+    return !remote_plugins_.empty()
+        || (python_path_.has_value() && fs::exists(remoteMediaToolScriptPath()));
+}
+
+const plugins::PluginManifest* RemoteMediaToolClient::pluginForProfile(const app::RemoteServerProfile& profile) const
+{
+    const auto kind = toKindString(profile.kind);
+    const auto exact_id = "io.github.vicliu624.lofibox.remote." + kind;
+    for (const auto& plugin : remote_plugins_) {
+        if (plugin.id == exact_id || remotePluginShortName(plugin.id) == kind) {
+            return &plugin;
+        }
+    }
+    return nullptr;
+}
+
+plugins::PluginRuntime* RemoteMediaToolClient::runtimeForPlugin(const plugins::PluginManifest& manifest) const
+{
+    auto found = runtimes_.find(manifest.id);
+    if (found != runtimes_.end()) {
+        return found->second.get();
+    }
+    if (!manifest.entry) {
+        return nullptr;
+    }
+
+    plugins::PluginRuntimeConfig config{};
+    config.plugin_dir = manifest.source_dir;
+    config.stderr_log_dir = runtime_paths::appStateDir() / "plugins" / pluginLogId(manifest.id);
+    config.command = manifest.entry->command;
+    config.args = manifest.entry->args;
+    config.cwd = manifest.entry->cwd;
+    config.env = manifest.entry->env;
+    auto runtime = std::make_unique<plugins::PluginRuntime>(std::move(config));
+    auto* ptr = runtime.get();
+    runtimes_.emplace(manifest.id, std::move(runtime));
+    return ptr;
+}
+
+std::optional<std::string> RemoteMediaToolClient::callPlugin(
+    const app::RemoteServerProfile& profile,
+    std::string_view method,
+    std::string_view params_json) const
+{
+    const auto* plugin = pluginForProfile(profile);
+    if (plugin == nullptr) {
+        return std::nullopt;
+    }
+    auto* runtime = runtimeForPlugin(*plugin);
+    if (runtime == nullptr) {
+        return std::nullopt;
+    }
+    auto response = runtime->call(method, params_json);
+    if (!response) {
+        logRuntime(RuntimeLogLevel::Warn, "remote", "Plugin " + plugin->id + " failed: " + runtime->lastError());
+    }
+    return response;
 }
 
 app::RemoteSourceSession RemoteMediaToolClient::probe(const app::RemoteServerProfile& profile) const
@@ -320,7 +423,12 @@ app::RemoteSourceSession RemoteMediaToolClient::probe(const app::RemoteServerPro
     if (handledLocally(profile.kind)) {
         return app::RemoteSourceSession{!profile.base_url.empty(), profile.name, "", "", profile.base_url.empty() ? "MISSING_URL" : "OK"};
     }
-    if (!available()) {
+    if (const auto json = callPlugin(profile, "probe", std::string("{\"profile\":") + remoteProfileJson(profile) + "}")) {
+        auto session = parseRemoteSession(*json);
+        logRuntime(session.available ? RuntimeLogLevel::Info : RuntimeLogLevel::Warn, "remote", "Plugin probe " + profile.name + " -> " + (session.available ? "available" : "unavailable"));
+        return session;
+    }
+    if (!legacyToolAvailable(python_path_)) {
         logRuntime(RuntimeLogLevel::Warn, "remote", "Remote source provider unavailable");
         return {};
     }
@@ -348,7 +456,19 @@ std::vector<app::RemoteTrack> RemoteMediaToolClient::searchTracks(
         }
         return {};
     }
-    if (!available()) {
+    {
+        std::ostringstream params;
+        params << "{\"profile\":" << remoteProfileJson(profile)
+               << ",\"session\":" << remoteSessionJson(session)
+               << ",\"query\":\"" << jsonEscape(std::string(query))
+               << "\",\"limit\":" << limit << "}";
+        if (const auto json = callPlugin(profile, "search", params.str())) {
+            auto tracks = parseRemoteTracks(*json);
+            logRuntime(RuntimeLogLevel::Info, "remote", "Plugin search " + profile.name + " returned " + std::to_string(tracks.size()) + " tracks");
+            return tracks;
+        }
+    }
+    if (!legacyToolAvailable(python_path_)) {
         logRuntime(RuntimeLogLevel::Warn, "remote", "Remote catalog provider unavailable");
         return {};
     }
@@ -374,7 +494,18 @@ std::vector<app::RemoteTrack> RemoteMediaToolClient::recentTracks(
     if (handledLocally(profile.kind)) {
         return profile.base_url.empty() ? std::vector<app::RemoteTrack>{} : std::vector<app::RemoteTrack>{localRemoteTrack(profile)};
     }
-    if (!available()) {
+    {
+        std::ostringstream params;
+        params << "{\"profile\":" << remoteProfileJson(profile)
+               << ",\"session\":" << remoteSessionJson(session)
+               << ",\"limit\":" << limit << "}";
+        if (const auto json = callPlugin(profile, "recent", params.str())) {
+            auto tracks = parseRemoteTracks(*json);
+            logRuntime(RuntimeLogLevel::Info, "remote", "Plugin recent " + profile.name + " returned " + std::to_string(tracks.size()) + " tracks");
+            return tracks;
+        }
+    }
+    if (!legacyToolAvailable(python_path_)) {
         logRuntime(RuntimeLogLevel::Warn, "remote", "Remote catalog provider unavailable");
         return {};
     }
@@ -399,7 +530,18 @@ std::vector<app::RemoteTrack> RemoteMediaToolClient::libraryTracks(
     if (handledLocally(profile.kind)) {
         return profile.base_url.empty() ? std::vector<app::RemoteTrack>{} : std::vector<app::RemoteTrack>{localRemoteTrack(profile)};
     }
-    if (!available()) {
+    {
+        std::ostringstream params;
+        params << "{\"profile\":" << remoteProfileJson(profile)
+               << ",\"session\":" << remoteSessionJson(session)
+               << ",\"limit\":" << limit << "}";
+        if (const auto json = callPlugin(profile, "library_tracks", params.str())) {
+            auto tracks = parseRemoteTracks(*json);
+            logRuntime(RuntimeLogLevel::Info, "remote", "Plugin library " + profile.name + " returned " + std::to_string(tracks.size()) + " tracks");
+            return tracks;
+        }
+    }
+    if (!legacyToolAvailable(python_path_)) {
         logRuntime(RuntimeLogLevel::Warn, "remote", "Remote catalog provider unavailable");
         return {};
     }
@@ -425,7 +567,21 @@ std::vector<app::RemoteCatalogNode> RemoteMediaToolClient::browse(
     if (handledLocally(profile.kind)) {
         return profile.base_url.empty() ? std::vector<app::RemoteCatalogNode>{} : std::vector<app::RemoteCatalogNode>{localRemoteNode(profile)};
     }
-    if (!available()) {
+    {
+        std::ostringstream params;
+        params << "{\"profile\":" << remoteProfileJson(profile)
+               << ",\"session\":" << remoteSessionJson(session)
+               << ",\"parent\":{\"kind\":\"" << nodeKindJson(parent.kind)
+               << "\",\"id\":\"" << jsonEscape(parent.id)
+               << "\",\"title\":\"" << jsonEscape(parent.title)
+               << "\"},\"limit\":" << limit << "}";
+        if (const auto json = callPlugin(profile, "browse", params.str())) {
+            auto nodes = parseRemoteNodes(*json);
+            logRuntime(RuntimeLogLevel::Info, "remote", "Plugin browse " + profile.name + " returned " + std::to_string(nodes.size()) + " nodes");
+            return nodes;
+        }
+    }
+    if (!legacyToolAvailable(python_path_)) {
         logRuntime(RuntimeLogLevel::Warn, "remote", "Remote catalog provider unavailable");
         return {};
     }
@@ -453,7 +609,48 @@ std::optional<app::ResolvedRemoteStream> RemoteMediaToolClient::resolveTrack(
     if (handledLocally(profile.kind)) {
         return localResolvedStream(profile, track);
     }
-    if (!available()) {
+    {
+        std::ostringstream params;
+        params << "{\"profile\":" << remoteProfileJson(profile)
+               << ",\"session\":" << remoteSessionJson(session)
+               << ",\"track\":{\"id\":\"" << jsonEscape(track.id)
+               << "\",\"title\":\"" << jsonEscape(track.title)
+               << "\",\"artist\":\"" << jsonEscape(track.artist)
+               << "\",\"album\":\"" << jsonEscape(track.album)
+               << "\",\"album_id\":\"" << jsonEscape(track.album_id)
+               << "\",\"duration_seconds\":" << track.duration_seconds
+               << ",\"source_id\":\"" << jsonEscape(track.source_id)
+               << "\",\"source_label\":\"" << jsonEscape(track.source_label)
+               << "\",\"artwork_key\":\"" << jsonEscape(track.artwork_key)
+               << "\",\"artwork_url\":\"" << jsonEscape(track.artwork_url)
+               << "\",\"lyrics_plain\":\"" << jsonEscape(track.lyrics_plain)
+               << "\",\"lyrics_synced\":\"" << jsonEscape(track.lyrics_synced)
+               << "\",\"lyrics_source\":\"" << jsonEscape(track.lyrics_source)
+               << "\",\"fingerprint\":\"" << jsonEscape(track.fingerprint)
+               << "\"}}";
+        if (const auto json = callPlugin(profile, "resolve", params.str())) {
+            auto resolved = parseResolvedStream(*json);
+            if (resolved) {
+                const auto entry = ::lofibox::remote::StreamSourceClassifier::classify(resolved->url);
+                resolved->quality_preference = app::StreamQualityPreference::Auto;
+                if (resolved->diagnostics.source_name.empty()) {
+                    resolved->diagnostics.source_name = profile.name.empty() ? toKindString(profile.kind) : profile.name;
+                }
+                if (resolved->diagnostics.resolved_url_redacted.empty()) {
+                    resolved->diagnostics.resolved_url_redacted = ::lofibox::security::SecretRedactor{}.redact(resolved->url);
+                }
+                resolved->diagnostics.protocol = protocolFromDirectEntry(entry);
+                resolved->diagnostics.seekable = resolved->seekable;
+                resolved->diagnostics.connected = true;
+                if (resolved->diagnostics.connection_status.empty()) {
+                    resolved->diagnostics.connection_status = "READY";
+                }
+            }
+            logRuntime(resolved ? RuntimeLogLevel::Info : RuntimeLogLevel::Warn, "remote", std::string("Plugin resolve ") + profile.name + " track " + track.id + (resolved ? " succeeded" : " failed"));
+            return resolved;
+        }
+    }
+    if (!legacyToolAvailable(python_path_)) {
         logRuntime(RuntimeLogLevel::Warn, "remote", "Remote stream resolver unavailable");
         return std::nullopt;
     }

@@ -2,6 +2,9 @@
 
 #include "runtime/runtime_command_dispatcher.h"
 
+#include <iostream>
+#include <string>
+
 namespace lofibox::runtime {
 
 RuntimeCommandDispatcher::RuntimeCommandDispatcher(RuntimeSessionFacade& session) noexcept
@@ -24,7 +27,17 @@ RuntimeCommandResult RuntimeCommandDispatcher::dispatch(const RuntimeCommand& co
     case RuntimeCommandKind::PlaybackStartTrack:
         {
             const auto* payload = command.payload.get<PlaybackStartTrackPayload>();
-            return applied(command, "PLAYBACK_START_TRACK", "Playback start-track submitted.", payload != nullptr && session_.startTrack(payload->track_id));
+            if (payload == nullptr) {
+                return applied(command, "PLAYBACK_START_TRACK", "Playback start-track submitted.", false);
+            }
+            std::cerr << "[webui] dispatcher PlaybackStartTrack: track_id=" << payload->track_id
+                      << " album=\"" << payload->album << "\""
+                      << " artist=\"" << payload->artist << "\""
+                      << " genre=\"" << payload->genre << "\"\n";
+            const bool ok = (!payload->album.empty() || !payload->genre.empty())
+                ? session_.startTrackWithContext(payload->track_id, *payload)
+                : session_.startTrack(payload->track_id);
+            return applied(command, "PLAYBACK_START_TRACK", "Playback start-track submitted.", ok);
         }
     case RuntimeCommandKind::PlaybackStop:
         session_.playback().stop();
@@ -141,6 +154,13 @@ RuntimeCommandResult RuntimeCommandDispatcher::dispatch(const RuntimeCommand& co
     case RuntimeCommandKind::EqReset:
         session_.eq().reset();
         return applied(command, "EQ_RESET", "EQ reset submitted.", true);
+    case RuntimeCommandKind::AudioEffectCycle:
+        {
+            const auto* payload = command.payload.get<AudioEffectCyclePayload>();
+            const auto plugin_id = payload == nullptr ? std::string{} : payload->plugin_id;
+            const int delta = payload == nullptr ? 1 : payload->delta;
+            return applied(command, "AUDIO_EFFECT_CYCLE", "Audio effect cycle submitted.", session_.eq().cycleAudioEffect(plugin_id, delta));
+        }
     case RuntimeCommandKind::SettingsApplyLive:
         {
             const auto* payload = command.payload.get<SettingsApplyLivePayload>();

@@ -51,6 +51,7 @@ bool isRuntimeCommand(std::string_view command) noexcept
         || command == "shuffle"
         || command == "repeat"
         || command == "eq"
+        || command == "remix"
         || command == "remote";
 }
 
@@ -263,6 +264,8 @@ CliFields eqFields(const lofibox::runtime::EqRuntimeSnapshot& eq)
     return {
         {"enabled", eq.enabled ? "ON" : "OFF"},
         {"preset", eq.preset_name},
+        {"effect", eq.effect_name},
+        {"effect_id", eq.effect_id.empty() ? "-" : eq.effect_id},
         {"bands", bandsLabel(eq)},
         {"version", std::to_string(eq.version)},
     };
@@ -587,7 +590,12 @@ void printRuntimeHelp(const ParsedRuntimeArgs& args, std::ostream& out)
     if (path == "eq" || path == "runtime eq") {
         out << "Usage: lofibox eq show|enable|disable|preset <name>|band <index> <gain>|reset [--json]\n"
             << "Queries or mutates the live DSP/EQ runtime state.\n"
-            << "Fields: enabled,preset,bands,version\n";
+            << "Fields: enabled,preset,effect,effect_id,bands,version\n";
+        return;
+    }
+    if (path == "remix") {
+        out << "Usage: lofibox remix [--json]\n"
+            << "Cycles the built-in Radio/Tape/Vinyl realtime remix effect.\n";
         return;
     }
     if (path == "remote" || path == "runtime remote") {
@@ -959,6 +967,9 @@ std::optional<lofibox::runtime::RuntimeCommand> buildCommand(
             }
             return command(lofibox::runtime::RuntimeCommandKind::EqSetBand, lofibox::runtime::RuntimeCommandPayload::eqSetBand(*band, *gain));
         }
+    }
+    if (first == "remix") {
+        return command(lofibox::runtime::RuntimeCommandKind::AudioEffectCycle, lofibox::runtime::RuntimeCommandPayload::audioEffectCycle());
     }
     if (first == "remote" && p.size() >= 2 && p[1] == "reconnect") {
         return command(lofibox::runtime::RuntimeCommandKind::RemoteReconnect);

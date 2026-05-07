@@ -8,7 +8,6 @@
 #include <cstdint>
 
 #include "ui/ui_primitives.h"
-#include "ui/ui_theme.h"
 
 namespace lofibox::ui::pages {
 namespace {
@@ -76,7 +75,7 @@ std::string formatDuration(int seconds)
         1.0f);
 }
 
-void renderTidalSpectrum(core::Canvas& canvas, const NowPlayingView& view)
+void renderTidalSpectrum(core::Canvas& canvas, const NowPlayingView& view, const UiTheme& theme)
 {
     constexpr int kLeft = 16;
     constexpr int kRight = 304;
@@ -100,7 +99,7 @@ void renderTidalSpectrum(core::Canvas& canvas, const NowPlayingView& view)
         for (int row = 0; row < height; ++row) {
             const float vertical = static_cast<float>(row) / static_cast<float>(std::max(1, height - 1));
             const int y = kBaseline - row;
-            const auto column_color = ::lofibox::ui::mixColor(base_color, ::lofibox::ui::kTextPrimary, 0.34f * vertical);
+            const auto column_color = ::lofibox::ui::mixColor(base_color, theme.palette.text_primary, 0.34f * vertical);
             const std::uint8_t opacity = view.visualization.available
                 ? static_cast<std::uint8_t>(std::clamp(42.0f + (118.0f * vertical), 0.0f, 160.0f))
                 : static_cast<std::uint8_t>(36);
@@ -113,7 +112,7 @@ void renderTidalSpectrum(core::Canvas& canvas, const NowPlayingView& view)
 
         for (int glow = 1; glow <= 3; ++glow) {
             const int y = kBaseline + glow;
-            const auto glow_color = ::lofibox::ui::mixColor(base_color, ::lofibox::ui::kBgRoot, 0.35f);
+            const auto glow_color = ::lofibox::ui::mixColor(base_color, theme.palette.background, 0.35f);
             blendPixel(canvas, x + 1, y, glow_color, static_cast<std::uint8_t>(38 / glow));
             blendPixel(canvas, x + 2, y, glow_color, static_cast<std::uint8_t>(38 / glow));
         }
@@ -122,11 +121,11 @@ void renderTidalSpectrum(core::Canvas& canvas, const NowPlayingView& view)
 
 } // namespace
 
-void renderNowPlayingPage(core::Canvas& canvas, const NowPlayingView& view)
+void renderNowPlayingPage(core::Canvas& canvas, const NowPlayingView& view, const UiTheme& theme)
 {
     if (!view.has_track) {
-        ::lofibox::ui::drawText(canvas, "NO TRACK", 122, 38, ::lofibox::ui::kTextPrimary, 1);
-        ::lofibox::ui::drawText(canvas, "SELECT MUSIC TO PLAY", 122, 58, ::lofibox::ui::kTextMuted, 1);
+        ::lofibox::ui::drawText(canvas, "NO TRACK", 122, 38, theme.palette.text_primary, 1);
+        ::lofibox::ui::drawText(canvas, "SELECT MUSIC TO PLAY", 122, 58, theme.palette.text_muted, 1);
         return;
     }
 
@@ -145,40 +144,48 @@ void renderNowPlayingPage(core::Canvas& canvas, const NowPlayingView& view)
             kArtworkSize,
             kArtworkSize,
             255);
-        canvas.strokeRect(kArtworkFrameX, kArtworkFrameY, kArtworkFrameSize, kArtworkFrameSize, ::lofibox::ui::kDivider, 1);
+        canvas.strokeRect(kArtworkFrameX, kArtworkFrameY, kArtworkFrameSize, kArtworkFrameSize, theme.palette.divider, 1);
     } else {
-        canvas.fillRect(kArtworkFrameX, kArtworkFrameY, kArtworkFrameSize, kArtworkFrameSize, ::lofibox::ui::kBgPanel1);
-        canvas.strokeRect(kArtworkFrameX, kArtworkFrameY, kArtworkFrameSize, kArtworkFrameSize, ::lofibox::ui::kDivider, 1);
-        canvas.fillRect(kArtworkFrameX + 18, kArtworkFrameY + 28, 16, 34, ::lofibox::ui::kProgressStrong);
-        canvas.fillRect(kArtworkFrameX + 38, kArtworkFrameY + 18, 18, 44, ::lofibox::ui::kProgress);
-        ::lofibox::ui::drawLine(canvas, kArtworkFrameX - 2, kArtworkFrameY + 8, kArtworkFrameX + 20, kArtworkFrameY - 2, ::lofibox::ui::kFocusEdge);
-        ::lofibox::ui::drawLine(canvas, kArtworkFrameX - 2, kArtworkFrameY + 42, kArtworkFrameX + 20, kArtworkFrameY + 42, ::lofibox::ui::kFocusEdge);
-        ::lofibox::ui::drawText(canvas, "NO ART", kArtworkFrameX + 12, kArtworkFrameY + 58, ::lofibox::ui::kTextMuted, 1);
+        canvas.fillRect(kArtworkFrameX, kArtworkFrameY, kArtworkFrameSize, kArtworkFrameSize, theme.palette.panel1);
+        canvas.strokeRect(kArtworkFrameX, kArtworkFrameY, kArtworkFrameSize, kArtworkFrameSize, theme.palette.divider, 1);
+        canvas.fillRect(kArtworkFrameX + 18, kArtworkFrameY + 28, 16, 34, theme.palette.progress_strong);
+        canvas.fillRect(kArtworkFrameX + 38, kArtworkFrameY + 18, 18, 44, theme.palette.progress);
+        ::lofibox::ui::drawLine(canvas, kArtworkFrameX - 2, kArtworkFrameY + 8, kArtworkFrameX + 20, kArtworkFrameY - 2, theme.palette.focus_edge);
+        ::lofibox::ui::drawLine(canvas, kArtworkFrameX - 2, kArtworkFrameY + 42, kArtworkFrameX + 20, kArtworkFrameY + 42, theme.palette.focus_edge);
+        ::lofibox::ui::drawText(canvas, "NO ART", kArtworkFrameX + 12, kArtworkFrameY + 58, theme.palette.text_muted, 1);
     }
 
-    ::lofibox::ui::drawText(canvas, view.title, 116, 30, ::lofibox::ui::kTextPrimary, 1);
-    ::lofibox::ui::drawText(canvas, view.artist, 116, 52, ::lofibox::ui::kTextSecondary, 1);
-    ::lofibox::ui::drawText(canvas, view.album, 116, 68, ::lofibox::ui::kTextMuted, 1);
+    ::lofibox::ui::drawText(canvas, view.title, 116, 30, theme.palette.text_primary, 1);
+    ::lofibox::ui::drawText(canvas, view.artist, 116, 52, theme.palette.text_secondary, 1);
+    ::lofibox::ui::drawText(canvas, view.album, 116, 68, theme.palette.text_muted, 1);
 
     ::lofibox::ui::drawFloatingProgressBar(
         canvas,
+        theme,
         116,
         92,
         184,
         std::max(0, std::min(184, static_cast<int>((view.elapsed_seconds / std::max(1, view.duration_seconds)) * 184.0))));
 
-    ::lofibox::ui::drawText(canvas, formatDuration(static_cast<int>(view.elapsed_seconds)), 116, 102, ::lofibox::ui::kTextSecondary, 1);
-    ::lofibox::ui::drawText(canvas, formatDuration(view.duration_seconds), 262, 102, ::lofibox::ui::kTextSecondary, 1);
+    ::lofibox::ui::drawText(canvas, formatDuration(static_cast<int>(view.elapsed_seconds)), 116, 102, theme.palette.text_secondary, 1);
+    ::lofibox::ui::drawText(canvas, formatDuration(view.duration_seconds), 262, 102, theme.palette.text_secondary, 1);
 
     const std::string play_label = view.status == NowPlayingStatus::Playing ? "PAUSE" : "PLAY";
-    ::lofibox::ui::drawText(canvas, "PREV", 110, 124, ::lofibox::ui::kTextMuted, 1);
-    ::lofibox::ui::drawText(canvas, play_label, 146, 124, ::lofibox::ui::kTextPrimary, 1);
-    ::lofibox::ui::drawText(canvas, "NEXT", 192, 124, ::lofibox::ui::kTextMuted, 1);
-    ::lofibox::ui::drawText(canvas, view.shuffle_enabled ? "SHUF*" : "SHUF", 236, 124, view.shuffle_enabled ? ::lofibox::ui::kProgress : ::lofibox::ui::kTextMuted, 1);
+    ::lofibox::ui::drawText(canvas, "PREV", 110, 124, theme.palette.text_muted, 1);
+    ::lofibox::ui::drawText(canvas, play_label, 146, 124, theme.palette.text_primary, 1);
+    ::lofibox::ui::drawText(canvas, "NEXT", 192, 124, theme.palette.text_muted, 1);
+    ::lofibox::ui::drawText(canvas, view.shuffle_enabled ? "SHUF*" : "SHUF", 236, 124, view.shuffle_enabled ? theme.palette.progress : theme.palette.text_muted, 1);
     const std::string repeat_label = view.repeat_one ? "ONE*" : (view.repeat_all ? "REP*" : "REP");
-    ::lofibox::ui::drawText(canvas, repeat_label, 278, 124, view.repeat_one || view.repeat_all ? ::lofibox::ui::kProgress : ::lofibox::ui::kTextMuted, 1);
+    ::lofibox::ui::drawText(canvas, repeat_label, 278, 124, view.repeat_one || view.repeat_all ? theme.palette.progress : theme.palette.text_muted, 1);
 
-    renderTidalSpectrum(canvas, view);
+    if (view.effect_name != "OFF") {
+        const auto remix_label = ::lofibox::ui::fitUpper(view.effect_name, 7);
+        constexpr int kWidth = 320;
+        const int remix_x = kWidth - static_cast<int>(remix_label.size()) * 7 - 10;
+        ::lofibox::ui::drawText(canvas, remix_label, remix_x, 4, theme.palette.focus_edge, 1);
+    }
+
+    renderTidalSpectrum(canvas, view, theme);
 }
 
 } // namespace lofibox::ui::pages

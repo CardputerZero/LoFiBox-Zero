@@ -358,7 +358,15 @@ void PlaybackController::refreshArtwork(const LibraryController& library_control
         return;
     }
     if (const auto* track = library_controller.findTrack(*session_.current_track_id)) {
-        session_.current_artwork = services_.metadata.artwork_provider->read(track->path, mode);
+        if (track->remote && !track->artwork_url.empty()) {
+            const auto cache_key = "remote-media-emby-"
+                + track->remote_profile_id + "-"
+                + track->remote_track_id;
+            session_.current_artwork = services_.metadata.artwork_provider->readRemoteIdentity(
+                cache_key, track->path, mode, track->artwork_url);
+        } else {
+            session_.current_artwork = services_.metadata.artwork_provider->read(track->path, mode);
+        }
     }
 }
 
