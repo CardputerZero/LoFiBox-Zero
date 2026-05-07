@@ -46,7 +46,6 @@ jobs:
             libfreetype6-dev \
             libxkbcommon-dev \
             libx11-dev \
-            pkg-config \
             pkgconf
 
       - name: Configure Shared Linux Tests
