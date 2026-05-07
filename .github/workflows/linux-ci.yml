@@ -43,7 +43,6 @@ jobs:
             g++ \
             lintian \
             ninja-build \
-            pkg-config \
             libfreetype6-dev \
             libxkbcommon-dev \
             libx11-dev \
