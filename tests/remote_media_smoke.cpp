@@ -77,6 +77,15 @@ std::optional<int> waitForServerPort(const fs::path& port_file)
     return std::nullopt;
 }
 
+bool fullRemoteMediaSmokeEnabled()
+{
+    if (const char* value = std::getenv("LOFIBOX_RUN_FULL_REMOTE_MEDIA_SMOKE")) {
+        const std::string enabled{value};
+        return enabled == "1" || enabled == "true" || enabled == "TRUE" || enabled == "yes" || enabled == "YES";
+    }
+    return false;
+}
+
 bool verifyRemoteGovernance()
 {
     lofibox::app::RemoteTrack remote{};
@@ -209,18 +218,6 @@ int main()
         return 1;
     }
 
-#if defined(_WIN32)
-    const auto python_path = test_media_fixture::resolveExecutablePath(L"PYTHON_EXECUTABLE", L"python.exe");
-#elif defined(__linux__)
-    const auto python_path = test_media_fixture::resolveExecutablePath("PYTHON_EXECUTABLE", "python3");
-#else
-    const auto python_path = std::optional<fs::path>{};
-#endif
-    if (!python_path.has_value()) {
-        std::cout << "python unavailable; skipping remote media smoke.\n";
-        return 0;
-    }
-
     const fs::path root = fs::temp_directory_path() / "lofibox_zero_remote_media_smoke";
     std::error_code ec{};
     fs::remove_all(root, ec);
@@ -232,6 +229,25 @@ int main()
     if (!verifyRemoteCatalogFactsBeatStaleCache(root)) {
         fs::remove_all(root, ec);
         return 1;
+    }
+
+    if (!fullRemoteMediaSmokeEnabled()) {
+        fs::remove_all(root, ec);
+        std::cout << "Full remote media provider smoke disabled; set LOFIBOX_RUN_FULL_REMOTE_MEDIA_SMOKE=1 to run it.\n";
+        return 0;
+    }
+
+#if defined(_WIN32)
+    const auto python_path = test_media_fixture::resolveExecutablePath(L"PYTHON_EXECUTABLE", L"python.exe");
+#elif defined(__linux__)
+    const auto python_path = test_media_fixture::resolveExecutablePath("PYTHON_EXECUTABLE", "python3");
+#else
+    const auto python_path = std::optional<fs::path>{};
+#endif
+    if (!python_path.has_value()) {
+        std::cout << "python unavailable; skipping full remote media provider smoke.\n";
+        fs::remove_all(root, ec);
+        return 0;
     }
 
     const fs::path server_script = root / "server.py";

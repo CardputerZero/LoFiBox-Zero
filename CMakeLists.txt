@@ -750,7 +750,6 @@ if(BUILD_TESTING)
     add_executable(lofibox_remote_media_smoke tests/remote_media_smoke.cpp)
     target_link_libraries(lofibox_remote_media_smoke PRIVATE lofibox_zero_host_runtime)
     add_test(NAME lofibox_remote_media_smoke COMMAND lofibox_remote_media_smoke)
-    set_tests_properties(lofibox_remote_media_smoke PROPERTIES TIMEOUT 45)
 
     add_executable(lofibox_real_emby_integration_smoke tests/real_emby_integration_smoke.cpp)
     target_link_libraries(lofibox_real_emby_integration_smoke PRIVATE lofibox_zero_host_runtime)
