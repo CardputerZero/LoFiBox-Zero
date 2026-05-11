@@ -191,6 +191,11 @@ opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/lofibox-$1\.tar\.gz/ \
 
 The tag name on the upstream repository (e.g., `v0.2.1`) must match the `CMakeLists.txt` version. A version bump must include a corresponding Git tag.
 
+The source release workflow is the owner of tag creation. It must validate that
+`CMakeLists.txt`, `debian/changelog`, `CHANGELOG.md`, and AppStream metadata all
+name the same upstream version before it creates `vX.Y.Z`. APT publishing must
+consume that immutable tag instead of treating `main` as a release identity.
+
 ### 8.3 debian/changelog Format
 
 `debian/changelog` must follow the Debian Policy format exactly. The version field must be `X.Y.Z-N` where `X.Y.Z` matches the upstream version and `N` is the Debian revision number (starting at 1 for each new upstream release).

@@ -85,13 +85,18 @@ archive packages.
 Use local preview suffixes:
 
 ```text
-0.1.0-1~lofibox1
-0.1.0-1~lofibox2
-0.1.1-1~lofibox1
+X.Y.Z-1~lofibox123.1
+X.Y.Z-1~lofibox123.2
+X.Y.Z-1~lofibox124.1
 ```
 
-This lets a future official Debian package such as `0.1.0-1` naturally supersede
-`0.1.0-1~lofibox1`.
+This lets a future official Debian package such as `X.Y.Z-1` naturally supersede
+`X.Y.Z-1~lofibox123.1`.
+
+APT publishing must consume an immutable LoFiBox-Zero source release tag such
+as `vX.Y.Z` when publishing a public preview package. The APT publisher may add
+the preview suffix, but it must not decide the upstream source version by
+treating `main` as release identity.
 
 ## 6. Suite And Architecture Policy
 

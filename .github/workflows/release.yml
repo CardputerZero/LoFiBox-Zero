@@ -1,0 +1,130 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: Source Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Upstream LoFiBox Zero version to release, for example 0.2.1."
+        required: true
+      publish_apt:
+        description: "Trigger the lofibox-apt publishing workflow after the GitHub Release is created."
+        required: true
+        type: boolean
+        default: true
+      apt_repository:
+        description: "APT repository to trigger when publish_apt is true."
+        required: true
+        default: "vicliu624/lofibox-apt"
+      apt_workflow:
+        description: "APT repository workflow file to run."
+        required: true
+        default: "publish.yml"
+      apt_ref:
+        description: "APT repository ref containing the publishing workflow."
+        required: true
+        default: "main"
+      apt_suite:
+        description: "APT suite to publish."
+        required: true
+        default: "trixie"
+      apt_preview_suffix:
+        description: "APT preview suffix. Use auto for ~lofibox<run_number>.<run_attempt>."
+        required: true
+        default: "auto"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: source-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Create Source Release
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require Main Branch
+        run: |
+          if [ "$GITHUB_REF_NAME" != "main" ]; then
+            echo "::error::Source releases must be run from main, got $GITHUB_REF_NAME."
+            exit 1
+          fi
+
+      - name: Install Release Metadata Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dpkg-dev
+
+      - name: Validate Release Metadata
+        run: |
+          chmod +x scripts/validate-release-metadata.sh scripts/extract-release-notes.sh
+          scripts/validate-release-metadata.sh "${{ inputs.version }}"
+
+      - name: Check Release Tag Is New
+        run: |
+          tag="v${{ inputs.version }}"
+          git fetch --tags origin
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "::error::Tag $tag already exists locally."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "::error::Tag $tag already exists on origin."
+            exit 1
+          fi
+
+      - name: Validate APT Trigger Access
+        if: inputs.publish_apt
+        env:
+          GH_TOKEN: ${{ secrets.LOFIBOX_APT_WORKFLOW_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::publish_apt is true, but LOFIBOX_APT_WORKFLOW_TOKEN is not configured."
+            exit 1
+          fi
+          gh api "repos/${{ inputs.apt_repository }}/actions/workflows/${{ inputs.apt_workflow }}" >/dev/null
+
+      - name: Extract Release Notes
+        run: |
+          scripts/extract-release-notes.sh "${{ inputs.version }}" "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create Git Tag
+        run: |
+          tag="v${{ inputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -F "$RUNNER_TEMP/release-notes.md" "$GITHUB_SHA"
+          git push origin "$tag"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${{ inputs.version }}"
+          gh release create "$tag" \
+            --target "$GITHUB_SHA" \
+            --title "LoFiBox Zero ${{ inputs.version }}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+
+      - name: Trigger APT Publish
+        if: inputs.publish_apt
+        env:
+          GH_TOKEN: ${{ secrets.LOFIBOX_APT_WORKFLOW_TOKEN }}
+        run: |
+          tag="v${{ inputs.version }}"
+          gh workflow run "${{ inputs.apt_workflow }}" \
+            --repo "${{ inputs.apt_repository }}" \
+            --ref "${{ inputs.apt_ref }}" \
+            -f source_ref="$tag" \
+            -f expected_upstream_version="${{ inputs.version }}" \
+            -f suite="${{ inputs.apt_suite }}" \
+            -f preview_suffix="${{ inputs.apt_preview_suffix }}"
