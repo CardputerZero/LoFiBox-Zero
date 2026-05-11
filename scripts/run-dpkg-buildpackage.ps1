@@ -47,8 +47,10 @@ tar \
   --exclude='./*.debian.tar.*' \
   -cf - . | tar -xf - -C "$source_dir"
 
-if [ -f /workspace/lofibox_0.1.0.orig.tar.xz ]; then
-  cp /workspace/lofibox_0.1.0.orig.tar.xz "$workspace/"
+package_version="$(dpkg-parsechangelog -l "$source_dir/debian/changelog" -S Version)"
+upstream_version="${package_version%%-*}"
+if [ -f "/workspace/lofibox_${upstream_version}.orig.tar.xz" ]; then
+  cp "/workspace/lofibox_${upstream_version}.orig.tar.xz" "$workspace/"
 fi
 
 cd "$source_dir"

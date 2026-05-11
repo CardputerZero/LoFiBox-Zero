@@ -1,0 +1,46 @@
+#!/bin/sh
+# SPDX-License-Identifier: CC0-1.0
+
+set -eu
+
+find_st7789v_fbdev()
+{
+    [ -r /proc/fb ] || return 1
+
+    while IFS= read -r line; do
+        case "$line" in
+            *fb_st7789v*)
+                set -- $line
+                case "${1:-}" in
+                    ''|*[!0-9]*) return 1 ;;
+                    *) printf '/dev/fb%s\n' "$1"; return 0 ;;
+                esac
+                ;;
+        esac
+    done < /proc/fb
+
+    return 1
+}
+
+case "$0" in
+    */*) script_dir=${0%/*} ;;
+    *) script_dir=/usr/lib/lofibox ;;
+esac
+
+if [ -z "${LOFIBOX_FBDEV:-}" ]; then
+    if [ -n "${APPLAUNCH_LINUX_FBDEV_DEVICE:-}" ]; then
+        LOFIBOX_FBDEV=$APPLAUNCH_LINUX_FBDEV_DEVICE
+    elif detected_fbdev=$(find_st7789v_fbdev); then
+        LOFIBOX_FBDEV=$detected_fbdev
+    else
+        LOFIBOX_FBDEV=/dev/fb1
+    fi
+fi
+
+if [ -z "${LOFIBOX_INPUT_DEV:-}" ]; then
+    LOFIBOX_INPUT_DEV="${APPLAUNCH_LINUX_KEYBOARD_DEVICE:-/dev/input/by-path/platform-3f804000.i2c-event}"
+fi
+
+export LOFIBOX_FBDEV LOFIBOX_INPUT_DEV
+
+exec "$script_dir/lofibox_zero_device" "$@"

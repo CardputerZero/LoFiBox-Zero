@@ -97,17 +97,29 @@ jobs:
           dpkg-checkbuilddeps
           dpkg-buildpackage -us -uc -b
 
+      - name: Resolve Debian Package Artifacts
+        run: |
+          deb_version="$(dpkg-parsechangelog -S Version)"
+          deb_arch="$(dpkg --print-architecture)"
+          echo "DEB_PACKAGE=../lofibox_${deb_version}_${deb_arch}.deb" >> "$GITHUB_ENV"
+          echo "DEB_CHANGES=../lofibox_${deb_version}_${deb_arch}.changes" >> "$GITHUB_ENV"
+
       - name: Verify Debian Package ABI Baseline
         run: |
-          dpkg-deb -f ../lofibox_0.2.0-1_amd64.deb Depends
-          dpkg-deb -f ../lofibox_0.2.0-1_amd64.deb Depends | tee /tmp/lofibox-depends.txt
+          test -f "$DEB_PACKAGE"
+          dpkg-deb -f "$DEB_PACKAGE" Depends
+          dpkg-deb -f "$DEB_PACKAGE" Depends | tee /tmp/lofibox-depends.txt
           if grep -E 'libc6 \(>= 2\.(3[8-9]|[4-9][0-9])' /tmp/lofibox-depends.txt; then
             echo "ERROR: Package requires too new glibc. Build on an older baseline."
             exit 1
           fi
 
       - name: Run Lintian
-        run: lintian ../lofibox_0.2.0-1_amd64.changes
+        run: |
+          test -f "$DEB_CHANGES"
+          lintian "$DEB_CHANGES"
 
       - name: Run Autopkgtest Smoke
-        run: sudo autopkgtest ../lofibox_0.2.0-1_amd64.changes -- null
+        run: |
+          test -f "$DEB_CHANGES"
+          sudo autopkgtest "$DEB_CHANGES" -- null

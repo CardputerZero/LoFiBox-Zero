@@ -1,6 +1,6 @@
 .\" SPDX-License-Identifier: GPL-3.0-or-later
 .\"
-.TH LOFIBOX 1 "April 2026" "LoFiBox 0.1.0" "User Commands"
+.TH LOFIBOX 1 "May 2026" "LoFiBox @PROJECT_VERSION@" "User Commands"
 .SH NAME
 lofibox \- chromeless desktop-widget music player
 .SH SYNOPSIS

@@ -21,6 +21,11 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.1" date="2026-05-11">
+      <description>
+        <p>Fixes Cardputer Zero APPLaunch startup by adding a wrapper that resolves the ST7789V framebuffer and keyboard device from APPLaunch environment or runtime detection, installs a stable device binary path, and uses a Cardputer-sized LoFiBox icon.</p>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-05-07">
       <description>
         <p>Realtime remix audio effects (Radio, Tape, Vinyl); async library scanning with per-phase progress bar; DSP limiter fixes and clip diagnostics; Cardputer Zero APPLaunch support; long-press Esc exit; About page with copyright and GitHub link.</p>
