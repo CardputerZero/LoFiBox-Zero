@@ -7,6 +7,15 @@ All notable changes to LoFiBox Zero will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-05-11
+
+### Fixed
+- Fixed Cardputer Zero APPLaunch startup by launching LoFiBox through an installed wrapper that resolves the ST7789V framebuffer from `LOFIBOX_FBDEV`, inherited APPLaunch environment, `/proc/fb`, or `/dev/fb1` fallback.
+- Fixed Cardputer Zero keyboard device selection by allowing the APPLaunch wrapper to inherit `APPLAUNCH_LINUX_KEYBOARD_DEVICE` before falling back to the known Cardputer evdev path.
+- Fixed APPLaunch packaging so `lofibox_zero_device` is always installed at `/usr/lib/lofibox/lofibox_zero_device` when the device target is built.
+- Fixed APPLaunch icon sizing by installing a LoFiBox-owned Cardputer-sized icon instead of symlinking the standard `180x180` hicolor desktop icon.
+- Added a Cardputer APPLaunch metadata smoke test and specification coverage for the wrapper, install layout, framebuffer precedence, keyboard-device precedence, and icon boundary.
+
 ## [0.2.0] — 2026-05-05
 
 ### Added

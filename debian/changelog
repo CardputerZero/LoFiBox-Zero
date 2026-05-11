@@ -1,3 +1,15 @@
+lofibox (0.2.1-1) UNRELEASED; urgency=medium
+
+  * Fix Cardputer Zero APPLaunch startup through a wrapper that inherits
+    APPLaunch framebuffer and keyboard device paths with ST7789V fallback
+    detection.
+  * Install a Cardputer-sized APPLaunch icon instead of linking the 180x180
+    hicolor desktop icon.
+  * Keep /usr/lib/lofibox/lofibox_zero_device stable for APPLaunch across
+    Linux device build configurations.
+
+ -- LoFiBox contributors <maintainers@example.invalid>  Mon, 11 May 2026 16:30:00 +0800
+
 lofibox (0.2.0-1) UNRELEASED; urgency=medium
 
   * New upstream release 0.2.0.

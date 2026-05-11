@@ -90,17 +90,94 @@ The `Cardputer Zero` profile must reuse the same product semantics as other Linu
 The profile may change presentation.
 It must not fork playback, library, streaming, metadata, credentials, persistence, or DSP behavior.
 
-## 7. Validation Rule
+## 7. APPLaunch Integration Contract
+
+When LoFiBox is launched from the Cardputer Zero `APPLaunch` environment, `APPLaunch` is treated as a runtime shell adapter.
+It may discover Linux device paths and pass them to LoFiBox through process environment inheritance.
+It must not redefine LoFiBox product semantics.
+
+The APPLaunch desktop entry must start the LoFiBox APPLaunch wrapper, not the generic desktop binary and not the device binary directly:
+
+- desktop entry path: `/usr/share/APPLaunch/applications/lofibox.desktop`
+- `Exec`: `/usr/lib/lofibox/lofibox-applaunch`
+- `Icon`: `share/images/lofibox.png`
+
+The wrapper must then `exec` the installed device target:
+
+- wrapper path: `/usr/lib/lofibox/lofibox-applaunch`
+- device target path: `/usr/lib/lofibox/lofibox_zero_device`
+
+The wrapper must preserve explicit user overrides.
+It must use these precedence rules for framebuffer selection:
+
+1. Existing `LOFIBOX_FBDEV`
+2. `APPLAUNCH_LINUX_FBDEV_DEVICE` inherited from APPLaunch
+3. A local `/proc/fb` scan for an entry containing `fb_st7789v`
+4. `/dev/fb1` as the last Cardputer Zero fallback
+
+This rule exists because the ST7789V framebuffer number is an observed Linux device fact, not a stable product constant.
+The implementation must not assume that the small screen is always `/dev/fb0` or always `/dev/fb1` when a stronger runtime signal is available.
+
+The wrapper must use these precedence rules for keyboard input selection:
+
+1. Existing `LOFIBOX_INPUT_DEV`
+2. `APPLAUNCH_LINUX_KEYBOARD_DEVICE` inherited from APPLaunch
+3. `/dev/input/by-path/platform-3f804000.i2c-event` as the Cardputer Zero fallback
+
+`APPLAUNCH_LINUX_KEYBOARD_MAP` must not be treated as a LoFiBox input contract unless LoFiBox gains an explicit adapter for APPLaunch/LVGL keymap files.
+The current LoFiBox device input path consumes Linux evdev key events and its own xkb/custom-key translation, not APPLaunch's LVGL keymap file.
+
+Mouse or pointer environment variables such as `LV_LINUX_MOUSE_DEVICE` are not part of the current LoFiBox Cardputer Zero contract.
+They must not be surfaced as supported LoFiBox behavior until a LoFiBox pointer input adapter exists.
+
+## 8. Packaging And Install Contract
+
+The Cardputer Zero APPLaunch integration must be installed only when the Linux framebuffer device target exists.
+Installing an APPLaunch entry that points to a missing runtime is invalid.
+
+When `lofibox_zero_device` is built, the install layout must include:
+
+- `/usr/lib/lofibox/lofibox_zero_device`
+- `/usr/lib/lofibox/lofibox-applaunch`
+- `/usr/share/APPLaunch/applications/lofibox.desktop`
+- `/usr/share/APPLaunch/share/images/lofibox.png`
+
+The device target path `/usr/lib/lofibox/lofibox_zero_device` must remain stable regardless of whether the X11 desktop target is also built.
+If a build without the X11 desktop target needs a generic command, it may additionally install `/usr/bin/lofibox`, but it must not replace the private device target path required by APPLaunch.
+
+The APPLaunch icon must be a Cardputer-sized asset owned by LoFiBox.
+It must not be a symlink to the standard Linux hicolor `180x180` desktop icon.
+The standard Linux desktop icon and the APPLaunch icon are separate presentation assets:
+
+- standard Linux desktop icon: hicolor icon theme
+- APPLaunch icon: `/usr/share/APPLaunch/share/images/lofibox.png`
+
+The standard Linux desktop entry must remain independent from the APPLaunch entry.
+Changes to the APPLaunch integration must not change the normal Linux desktop launch path unless a separate Linux desktop specification requires it.
+
+## 9. Validation Rule
 
 Profile-specific changes should be validated against a real profile runtime or a faithful Linux validation harness.
 
 The validation harness must remain an adapter.
 If a behavior works only in the harness and not in the shared Linux product code path, the implementation is structurally suspect.
 
-## 8. AI Constraints
+The Cardputer Zero APPLaunch integration must have a regression check that covers at least:
+
+- the APPLaunch desktop `Exec` path
+- the APPLaunch icon path and small-screen icon dimensions
+- the wrapper's framebuffer precedence
+- the wrapper's keyboard-device precedence
+- the wrapper's final `exec` of `lofibox_zero_device`
+
+Build or packaging verification should confirm that `/usr/lib/lofibox/lofibox_zero_device` and `/usr/lib/lofibox/lofibox-applaunch` are installed with executable permissions.
+
+## 10. AI Constraints
 
 - Do not remove Cardputer Zero constraints merely because LoFiBox is a Linux desktop player.
 - Do not reclassify Cardputer Zero constraints as product-wide desktop constraints.
 - Do not add window menu bars or generic desktop chrome to the Cardputer Zero product surface.
 - Do not describe the no-menu-bar rule as only a Cardputer Zero workaround; it is part of the primary LoFiBox shell.
 - Do not let framebuffer, VNC, PocketFrame, or container details leak into shared app semantics.
+- Do not hard-code a framebuffer device path when APPLaunch or `/proc/fb` can provide a stronger runtime signal.
+- Do not treat APPLaunch's LVGL keyboard map or mouse device variables as LoFiBox contracts before LoFiBox has adapters that consume them.

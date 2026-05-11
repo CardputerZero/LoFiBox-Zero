@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.2.0 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.1 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -365,14 +365,13 @@ if(LOFIBOX_BUILD_DEVICE)
         target_link_libraries(lofibox_zero_device PRIVATE lofibox_webui)
         target_compile_definitions(lofibox_zero_device PRIVATE LOFIBOX_HAVE_WEBUI=1)
     endif()
-    if(TARGET lofibox_zero_x11)
-        install(TARGETS lofibox_zero_device
-            RUNTIME DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
-        )
-    else()
-        set_target_properties(lofibox_zero_device PROPERTIES OUTPUT_NAME lofibox)
-        install(TARGETS lofibox_zero_device
-            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    install(TARGETS lofibox_zero_device
+        RUNTIME DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
+    )
+    if(NOT TARGET lofibox_zero_x11)
+        install(PROGRAMS "$<TARGET_FILE:lofibox_zero_device>"
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            RENAME lofibox
         )
     endif()
 endif()
@@ -415,10 +414,21 @@ install(FILES data/io.github.vicliu624.lofibox.desktop
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 
-install(FILES data/lofibox-cardputer-zero.desktop
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/APPLaunch/applications"
-    RENAME lofibox.desktop
-)
+if(TARGET lofibox_zero_device)
+    install(PROGRAMS data/lofibox-cardputer-zero-applaunch
+        DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
+        RENAME lofibox-applaunch
+    )
+
+    install(FILES data/lofibox-cardputer-zero.desktop
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/APPLaunch/applications"
+        RENAME lofibox.desktop
+    )
+
+    install(FILES assets/ui/icons/cardputer-zero/lofibox.png
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/APPLaunch/share/images"
+    )
+endif()
 
 install(FILES data/io.github.vicliu624.lofibox.metainfo.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo"
@@ -667,6 +677,10 @@ if(BUILD_TESTING)
     add_executable(lofibox_desktop_security_completion_smoke tests/desktop_security_completion_smoke.cpp)
     target_link_libraries(lofibox_desktop_security_completion_smoke PRIVATE lofibox_zero_core)
     add_test(NAME lofibox_desktop_security_completion_smoke COMMAND lofibox_desktop_security_completion_smoke)
+
+    add_executable(lofibox_cardputer_applaunch_metadata_smoke tests/cardputer_applaunch_metadata_smoke.cpp)
+    target_compile_definitions(lofibox_cardputer_applaunch_metadata_smoke PRIVATE LOFIBOX_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME lofibox_cardputer_applaunch_metadata_smoke COMMAND lofibox_cardputer_applaunch_metadata_smoke)
 
     add_executable(lofibox_final_surface_pages_smoke tests/final_surface_pages_smoke.cpp)
     target_link_libraries(lofibox_final_surface_pages_smoke PRIVATE lofibox_zero_core)

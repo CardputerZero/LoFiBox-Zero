@@ -656,7 +656,7 @@ The project version is defined in exactly one place:
 
 ```cmake
 # CMakeLists.txt line 5
-project(LoFiBoxZero VERSION 0.2.0 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.1 LANGUAGES C CXX)
 ```
 
 `PROJECT_VERSION` is the authoritative version string. No other file may define the version independently. The `PROJECT_VERSION_MAJOR`, `PROJECT_VERSION_MINOR`, and `PROJECT_VERSION_PATCH` variables are available for decomposed use if needed, though current consumers use the full string.
@@ -730,12 +730,12 @@ The generated `version.py` is installed to `${LOFIBOX_PRIVATE_LIBDIR}` (`/usr/li
 
 | Consumer | File | Purpose | Format |
 |----------|------|---------|--------|
-| CLI `--version` | `src/targets/cli_options.cpp` | Human and machine-readable version output | `lofibox 0.2.0` / `{"version":"0.2.0"}` |
-| CLI `--help` | `src/targets/cli_options.cpp` | Banner in help text | `LoFiBox 0.2.0` |
+| CLI `--version` | `src/targets/cli_options.cpp` | Human and machine-readable version output | `lofibox 0.2.1` / `{"version":"0.2.1"}` |
+| CLI `--help` | `src/targets/cli_options.cpp` | Banner in help text | `LoFiBox 0.2.1` |
 | GUI About Page | `src/app/app_projection_builder.cpp` | On-device about screen | Rendered in 320×170 canvas |
-| Jellyfin Auth | `src/remote/jellyfin/jellyfin_provider.py` | HTTP User-Agent / auth header | `Version="0.2.0"` |
-| Debian Package | `debian/changelog` | Package version for dpkg/APT | `lofibox (0.2.0-1)` |
-| AppStream Metadata | `data/...metainfo.xml` | Software center (GNOME/KDE) display | `<release version="0.2.0" .../>` |
+| Jellyfin Auth | `src/remote/jellyfin/jellyfin_provider.py` | HTTP User-Agent / auth header | `Version="0.2.1"` |
+| Debian Package | `debian/changelog` | Package version for dpkg/APT | `lofibox (0.2.1-1)` |
+| AppStream Metadata | `data/...metainfo.xml` | Software center (GNOME/KDE) display | `<release version="0.2.1" .../>` |
 
 ### 14.5 App Version vs. Snapshot Version
 
@@ -743,7 +743,7 @@ Two distinct version concepts exist in the codebase and must not be confused:
 
 | Concept | Type | Source | Purpose |
 |---------|------|--------|---------|
-| **App version** | String (`"0.2.0"`) | CMake `PROJECT_VERSION` | Software release identity; displayed in CLI, GUI About, Jellyfin UA, Debian package |
+| **App version** | String (`"0.2.1"`) | CMake `PROJECT_VERSION` | Software release identity; displayed in CLI, GUI About, Jellyfin UA, Debian package |
 | **Snapshot version** | Integer (`42`, `43`, …) | `RuntimeSnapshot::version` | Monotonic counter incremented on each state mutation; used for cache invalidation and event diffing |
 
 The snapshot `version` field in WebUI JSON responses (e.g., `"version": 42` at the top level of `/api/runtime/snapshot`) is the runtime state counter, **not** the app release version. The WebUI frontend stores this as `state.version` and uses it internally for event stream tracking. It must never be displayed to the user as if it were the software version.
@@ -768,8 +768,8 @@ All other version-bearing locations are generated or preprocessor-derived and re
 
 ### 14.7 Debian Compliance Notes
 
-- **Upstream source**: The version in `CMakeLists.txt` is the upstream version. Debian packaging adds the Debian revision (e.g., `0.2.0-1`) in `debian/changelog` only. The upstream source must report the unadorned version string.
-- **`debian/watch`**: Points to GitHub release tags. The version extraction pattern `.*/v?(\d\S*)\.tar\.gz` matches tags like `v0.2.0`. The tag name must match the `CMakeLists.txt` version.
-- **`--version` output**: `lofibox 0.2.0` is the upstream version. The Debian package may optionally append the Debian revision, but the default behavior (reporting the raw upstream version) is correct for a pristine upstream source.
+- **Upstream source**: The version in `CMakeLists.txt` is the upstream version. Debian packaging adds the Debian revision (e.g., `0.2.1-1`) in `debian/changelog` only. The upstream source must report the unadorned version string.
+- **`debian/watch`**: Points to GitHub release tags. The version extraction pattern `.*/v?(\d\S*)\.tar\.gz` matches tags like `v0.2.1`. The tag name must match the `CMakeLists.txt` version.
+- **`--version` output**: `lofibox 0.2.1` is the upstream version. The Debian package may optionally append the Debian revision, but the default behavior (reporting the raw upstream version) is correct for a pristine upstream source.
 - **Reproducible builds**: The `configure_file()` approach for Python version injection is deterministic — given the same source tree, the generated `version.py` is byte-identical. The preprocessor macro approach is also deterministic. Both satisfy Debian's reproducible builds requirement.
 - **No hardcoded versions**: The architecture enforcement rules in Section 13 apply to version strings as well. No source file (C++, Python, or otherwise) may contain a hardcoded version literal. The grep pattern `"0\.[0-9]+\.[0-9]+"` should return zero results in `src/` at all times.
