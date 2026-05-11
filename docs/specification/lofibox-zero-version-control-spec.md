@@ -209,7 +209,7 @@ The file is parsed by `dpkg-parsechangelog` during package builds. Malformed ent
 Both version propagation mechanisms satisfy Debian's reproducible builds requirement:
 
 - **Preprocessor macro**: `LOFIBOX_VERSION` is set at CMake configure time from `PROJECT_VERSION`. Given the same source tree and build flags, the resulting binary is bit-identical.
-- **configure_file()**: The generated `version.py` is deterministic — same input template + same `PROJECT_VERSION` → byte-identical output.
+- **configure_file()**: Generated version-bearing files such as `version.py` and `lofibox.1` are deterministic — same input template + same `PROJECT_VERSION` → byte-identical output.
 - No build timestamp, username, hostname, or random identifier is embedded in version-bearing code paths.
 
 ## 9. Forbidden Patterns
@@ -219,7 +219,7 @@ The following patterns are forbidden and must be caught in code review:
 - **Hardcoded version literals**: Any source file (C++, Python, shell, CMake helper) containing a literal version string such as `"0.2.1"` or `"0.1.0"`. The grep pattern `"0\.[0-9]+\.[0-9]+"` should return zero results in `src/` at all times.
 - **Duplicate version definitions**: A second `project(VERSION …)` call, a hand-maintained `VERSION` file, a `version.txt`, or any alternative source of truth.
 - **Build-time version detection**: `git describe`, `git rev-parse`, or any VCS-based version extraction in build scripts. The version must come from `CMakeLists.txt`, not from Git history.
-- **Version in file names without automation**: If a file name must include the version (e.g., a tarball or `.deb`), it must be generated from `PROJECT_VERSION` rather than hand-typed.
+- **Version in file names without automation**: If a file name must include the version (e.g., a tarball, `.deb`, or `.changes`), it must be generated from `PROJECT_VERSION` or from `debian/changelog` when the Debian revision is part of the file name, rather than hand-typed.
 - **Snapshot version displayed as app version**: `RuntimeSnapshot::version` (the integer state counter) must never appear in user-facing version displays.
 - **Version embedded in binary via `__DATE__` or `__TIME__`**: These macros make builds non-reproducible and must not appear in version-bearing code paths.
 

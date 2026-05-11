@@ -395,6 +395,13 @@ configure_file(
     @ONLY
 )
 
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated/man")
+configure_file(
+    "${PROJECT_SOURCE_DIR}/data/man/lofibox.1.in"
+    "${CMAKE_BINARY_DIR}/generated/man/lofibox.1"
+    @ONLY
+)
+
 install(FILES "${CMAKE_BINARY_DIR}/generated/version.py"
     DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
 )
@@ -447,7 +454,7 @@ install(FILES data/mime/io.github.vicliu624.lofibox.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/mime/packages"
 )
 
-install(FILES data/man/lofibox.1
+install(FILES "${CMAKE_BINARY_DIR}/generated/man/lofibox.1"
     DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
 )
 
@@ -681,6 +688,13 @@ if(BUILD_TESTING)
     add_executable(lofibox_cardputer_applaunch_metadata_smoke tests/cardputer_applaunch_metadata_smoke.cpp)
     target_compile_definitions(lofibox_cardputer_applaunch_metadata_smoke PRIVATE LOFIBOX_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME lofibox_cardputer_applaunch_metadata_smoke COMMAND lofibox_cardputer_applaunch_metadata_smoke)
+
+    add_executable(lofibox_packaging_version_metadata_smoke tests/packaging_version_metadata_smoke.cpp)
+    target_compile_definitions(lofibox_packaging_version_metadata_smoke PRIVATE
+        LOFIBOX_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        LOFIBOX_PROJECT_VERSION="${PROJECT_VERSION}"
+    )
+    add_test(NAME lofibox_packaging_version_metadata_smoke COMMAND lofibox_packaging_version_metadata_smoke)
 
     add_executable(lofibox_final_surface_pages_smoke tests/final_surface_pages_smoke.cpp)
     target_link_libraries(lofibox_final_surface_pages_smoke PRIVATE lofibox_zero_core)

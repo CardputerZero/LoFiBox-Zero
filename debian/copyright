@@ -17,7 +17,7 @@ Copyright:
 License: CC0-1.0
 
 Files:
- data/man/lofibox.1
+ data/man/lofibox.1.in
 Copyright:
  2026 LoFiBox contributors
 License: GPL-3.0-or-later

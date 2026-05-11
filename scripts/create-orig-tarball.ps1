@@ -2,13 +2,36 @@
 
 param(
     [string]$Image = "lofibox-zero/package-build:trixie",
-    [string]$Version = "0.1.0"
+    [string]$Version = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $parent = Split-Path $repo
+
+$cmakeText = Get-Content -Path (Join-Path $repo "CMakeLists.txt") -Raw
+if ($cmakeText -notmatch 'project\s*\(\s*LoFiBoxZero\s+VERSION\s+([0-9]+(?:\.[0-9]+){2})\s+LANGUAGES') {
+    throw "Could not parse project version from CMakeLists.txt"
+}
+$projectVersion = $Matches[1]
+
+$changelogHeader = Get-Content -Path (Join-Path $repo "debian\changelog") -TotalCount 1
+if ($changelogHeader -notmatch '^\S+\s+\(([^)]+)\)') {
+    throw "Could not parse Debian package version from debian/changelog"
+}
+$packageVersion = $Matches[1]
+$upstreamVersion = ($packageVersion -split '-', 2)[0]
+if ($upstreamVersion -ne $projectVersion) {
+    throw "CMake project version '$projectVersion' does not match Debian upstream version '$upstreamVersion'"
+}
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = $projectVersion
+}
+if ($Version -ne $projectVersion) {
+    throw "Requested orig tarball version '$Version' does not match CMake project version '$projectVersion'"
+}
+
 $archive = Join-Path $parent "lofibox_$Version.orig.tar.xz"
 
 docker image inspect $Image *> $null

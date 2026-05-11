@@ -11,7 +11,14 @@ $ErrorActionPreference = "Stop"
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $parent = Split-Path $repo
-$changes = Join-Path $parent "lofibox_0.1.0-1_amd64.changes"
+$changelogHeader = Get-Content -Path (Join-Path $repo "debian\changelog") -TotalCount 1
+if ($changelogHeader -notmatch '^\S+\s+\(([^)]+)\)') {
+    throw "Could not parse Debian package version from debian/changelog"
+}
+$packageVersion = $Matches[1]
+$packageArch = "amd64"
+$changesName = "lofibox_${packageVersion}_${packageArch}.changes"
+$changes = Join-Path $parent $changesName
 
 if (-not $SkipOrigTarball) {
     & (Join-Path $PSScriptRoot "create-orig-tarball.ps1")
@@ -44,7 +51,7 @@ if (-not $AllowNetwork) {
     -v "${parent}:/workspace" `
     -w /workspace `
     $Image `
-    bash -lc "set -euxo pipefail; lintian lofibox_0.1.0-1_amd64.changes; autopkgtest lofibox_0.1.0-1_amd64.changes -- null"
+    bash -lc "set -euxo pipefail; lintian '$changesName'; autopkgtest '$changesName' -- null"
 
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

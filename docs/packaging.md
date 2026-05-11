@@ -60,7 +60,7 @@ scripts/create-orig-tarball.ps1
 scripts/run-dpkg-buildpackage.ps1 -BuildArgs "-us -uc"
 ```
 
-The generated archive is written next to the repository as `lofibox_0.2.0.orig.tar.xz`. It excludes `debian/`, VCS metadata, build directories, and generated package artifacts. This is a local validation helper; actual archive uploads should use release-tag tarballs tracked by `debian/watch`.
+The generated archive is written next to the repository as `lofibox_<upstream-version>.orig.tar.xz`. The helper derives the upstream version from `CMakeLists.txt` and validates that `debian/changelog` names the same upstream version before creating the archive. It excludes `debian/`, VCS metadata, build directories, and generated package artifacts. This is a local validation helper; actual archive uploads should use release-tag tarballs tracked by `debian/watch`.
 
 `debian/source/options` also ignores local build/debug directories such as `build/`, `.tmp/`, `out/`, `runs/`, and `obj-*` so source package checks are not polluted by generated debug output or temporary media-debug artifacts. These directories are not project source and must not be represented in Debian source diffs.
 
@@ -108,10 +108,10 @@ The repository must be signed and consumed through `Signed-By`. Do not use
 Preview package versions should use a local suffix such as:
 
 ```text
-0.1.0-1~lofibox1
+X.Y.Z-1~lofibox1
 ```
 
-This keeps future official Debian versions such as `0.1.0-1` able to supersede
+This keeps future official Debian versions such as `X.Y.Z-1` able to supersede
 the preview package naturally.
 
 Publication is manual through:
@@ -136,9 +136,9 @@ scripts/build-github-pages-apt-repository.sh \
   --architectures amd64,arm64,armhf \
   --output public \
   --gpg-key "$LOFIBOX_APT_GPG_KEY_ID" \
-  --changes ../lofibox_0.2.0-1~lofibox1_amd64.changes \
-  --changes ../lofibox_0.2.0-1~lofibox1_arm64.changes \
-  --changes ../lofibox_0.2.0-1~lofibox1_armhf.changes
+  --changes ../lofibox_<preview-version>_amd64.changes \
+  --changes ../lofibox_<preview-version>_arm64.changes \
+  --changes ../lofibox_<preview-version>_armhf.changes
 ```
 
 The GitHub-hosted preview workflow builds `amd64`, cross-builds `arm64`, and
@@ -160,7 +160,9 @@ publisher.
 The package smoke test is intentionally limited to installed runtime behavior and desktop metadata, but it is not marked `superficial` because it is the package-level gate for CLI availability and desktop/AppStream metadata validity:
 
 ```sh
-autopkgtest lofibox_0.2.0-1_amd64.changes -- null
+deb_version="$(dpkg-parsechangelog -S Version)"
+deb_arch="$(dpkg --print-architecture)"
+autopkgtest "../lofibox_${deb_version}_${deb_arch}.changes" -- null
 ```
 
 The local Docker-based package-build image excludes `/usr/share/man/*` through dpkg path-exclude rules, so autopkgtest must not assert manpage installation from the testbed filesystem. Manpage presence is validated through package contents and `lintian`.
