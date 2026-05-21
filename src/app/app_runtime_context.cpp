@@ -357,6 +357,10 @@ LibraryScanProgress AppRuntimeContext::libraryScanProgress() const
 
 void AppRuntimeContext::startLibraryLoading()
 {
+    if (state_.media_roots.empty()) {
+        (void)appServices().libraryMutations().beginAsyncRefreshConfiguredLibrary();
+        return;
+    }
     (void)appServices().libraryMutations().beginAsyncRefreshLibrary(state_.media_roots);
 }
 
@@ -370,6 +374,9 @@ void AppRuntimeContext::refreshLibrary()
 void AppRuntimeContext::refreshRemoteLibraryTracks()
 {
     for (auto& profile : state_.remote_profiles) {
+        if (profile.kind == RemoteServerKind::LocalRoot) {
+            continue;
+        }
         if (profile.base_url.empty()) {
             continue;
         }
@@ -718,6 +725,9 @@ std::vector<std::pair<std::string, std::string>> AppRuntimeContext::libraryIndex
 {
     auto rows = appServices().libraryQueries().rowsForPage(AppPage::MusicIndex).value_or(std::vector<std::pair<std::string, std::string>>{});
     for (const auto& profile : state_.remote_profiles) {
+        if (profile.kind == RemoteServerKind::LocalRoot) {
+            continue;
+        }
         int track_count = 0;
         for (const auto& track : appServices().libraryQueries().model().tracks) {
             if (track.remote && track.remote_profile_id == profile.id) {
@@ -1058,13 +1068,20 @@ bool AppRuntimeContext::handleLibraryRemoteConfirm(int selected)
     if (selected < remote_base) {
         return false;
     }
-    const auto profile_index = static_cast<std::size_t>(selected - remote_base);
-    if (profile_index >= state_.remote_profiles.size()) {
-        return false;
+    const auto visible_index = selected - remote_base;
+    int remote_index = 0;
+    for (std::size_t profile_index = 0; profile_index < state_.remote_profiles.size(); ++profile_index) {
+        if (state_.remote_profiles[profile_index].kind == RemoteServerKind::LocalRoot) {
+            continue;
+        }
+        if (remote_index == visible_index) {
+            openRemoteProfile(profile_index);
+            commandPushPage(*this, state_.selected_remote_session.available ? AppPage::RemoteBrowse : AppPage::ServerDiagnostics);
+            return true;
+        }
+        ++remote_index;
     }
-    openRemoteProfile(profile_index);
-    commandPushPage(*this, state_.selected_remote_session.available ? AppPage::RemoteBrowse : AppPage::ServerDiagnostics);
-    return true;
+    return false;
 }
 
 bool AppRuntimeContext::handleSourceManagerConfirm(int selected)
@@ -1078,6 +1095,13 @@ bool AppRuntimeContext::handleSourceManagerConfirm(int selected)
     const int profile_base = 3 + static_cast<int>(manifests.size());
     if (selected >= profile_base) {
         const auto profile_index = static_cast<std::size_t>(selected - profile_base);
+        if (profile_index >= state_.remote_profiles.size()) {
+            return false;
+        }
+        if (state_.remote_profiles[profile_index].kind == RemoteServerKind::LocalRoot) {
+            commandPushPage(*this, AppPage::MusicIndex);
+            return true;
+        }
         openRemoteProfile(profile_index);
         commandPushPage(*this, AppPage::RemoteBrowse);
         return true;
@@ -1530,7 +1554,10 @@ void AppRuntimeContext::refreshSearchResults()
     }
 
     for (auto& profile : state_.remote_profiles) {
-        if (state_.search_results.size() >= 12U || profile.base_url.empty() || sourceProfileService().readiness(profile) != "READY") {
+        if (state_.search_results.size() >= 12U
+            || profile.kind == RemoteServerKind::LocalRoot
+            || profile.base_url.empty()
+            || sourceProfileService().readiness(profile) != "READY") {
             continue;
         }
         const auto remote_result = remoteBrowseService().search(profile, state_.remote_profiles.size(), state_.search_query, 4);

@@ -7,6 +7,23 @@ All notable changes to LoFiBox Zero will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-05-21
+
+### Added
+- Added durable local media roots as `SourceProfilesDomain` local-root profiles with stable ids, labels, enabled/default-eligible flags, and no credential reference.
+- Added `lofibox source local-root list/add/remove/enable/disable` and library-facing `lofibox library root list/add/remove/enable/disable` aliases.
+- Added runtime `library-refresh` support so a running instance can reload durable enabled local roots and refresh its in-memory library index.
+
+### Changed
+- GUI and device startup now refresh the library from enabled local roots through application services instead of target-local or scanner-owned product defaults.
+- The default local media root is now `~/Music` when no enabled local-root profile exists; `/music` remains only an explicit or compatibility fallback.
+- `lofibox library scan [path...]` and `--root` paths remain temporary diagnostic roots and do not become durable library roots.
+
+### Fixed
+- Fixed startup root resolution for root-owned deployments: when the process home is `/root`, the unconfigured default local library root resolves to `/root/Music`.
+- Filtered local-root profiles out of remote browse/search flows while preserving their profile persistence.
+- Fixed Windows/MSVC release builds by compiling sources as UTF-8 and using the correct wide-character `curl.exe` helper lookup.
+
 ## [0.2.1] - 2026-05-11
 
 ### Fixed

@@ -49,6 +49,7 @@ enum class RuntimeCommandKind {
     AudioEffectCycle,
     RemoteReconnect,
     SettingsApplyLive,
+    LibraryRefresh,
     RuntimeShutdown,
     RuntimeReload,
 };

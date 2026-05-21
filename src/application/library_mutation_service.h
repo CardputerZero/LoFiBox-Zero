@@ -22,9 +22,12 @@ public:
     LibraryMutationService(app::LibraryController& controller, const app::RuntimeServices& services) noexcept;
 
     void startLoading() const noexcept;
+    void markConfiguredLibraryStale() const noexcept;
     void refreshLibrary(const std::vector<std::filesystem::path>& media_roots, const app::MetadataProvider& metadata_provider) const;
     [[nodiscard]] bool refreshLibrary(const std::vector<std::filesystem::path>& media_roots) const;
+    [[nodiscard]] bool refreshConfiguredLibrary() const;
     [[nodiscard]] bool beginAsyncRefreshLibrary(const std::vector<std::filesystem::path>& media_roots) const;
+    [[nodiscard]] bool beginAsyncRefreshConfiguredLibrary() const;
     [[nodiscard]] bool pollAsyncRefreshLibrary() const;
     [[nodiscard]] app::LibraryScanProgress scanProgress() const;
     void mergeRemoteTracks(const app::RemoteServerProfile& profile, const std::vector<app::RemoteTrack>& tracks) const;

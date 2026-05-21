@@ -614,7 +614,7 @@ void printRuntimeHelp(const ParsedRuntimeArgs& args, std::ostream& out)
         << "  repeat off|all|one\n"
         << "  eq show|enable|disable|preset <name>|band <index> <gain>|reset\n"
         << "  remote reconnect\n"
-        << "  runtime reload|runtime shutdown\n";
+        << "  runtime library-refresh|runtime reload|runtime shutdown\n";
 }
 
 void printJsonStringArray(std::ostream& out, std::string_view name, const std::vector<std::string>& values, bool& first)
@@ -975,6 +975,7 @@ std::optional<lofibox::runtime::RuntimeCommand> buildCommand(
         return command(lofibox::runtime::RuntimeCommandKind::RemoteReconnect);
     }
     if (first == "runtime" && p.size() >= 2) {
+        if (p[1] == "library-refresh") return command(lofibox::runtime::RuntimeCommandKind::LibraryRefresh);
         if (p[1] == "reload") return command(lofibox::runtime::RuntimeCommandKind::RuntimeReload);
         if (p[1] == "shutdown") return command(lofibox::runtime::RuntimeCommandKind::RuntimeShutdown);
         if (p[1] == "settings" && p.size() >= 3 && p[2] == "apply") {

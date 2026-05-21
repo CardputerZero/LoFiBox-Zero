@@ -212,3 +212,18 @@ This update records the completion pass for the three TUI gaps left by the first
 - Smoke coverage now includes runtime event stream connection/command concurrency/event delivery, creator projection through runtime snapshots, UTF-8 terminal input decoding, bracketed paste guard behavior, and command-palette paste confirmation semantics.
 - Verified on `vicliu@192.168.50.48`: no-X11/no-device Ninja build with `LOFIBOX_BUILD_TUI=ON` passed full CTest 80/80, including the new runtime event stream, creator projection, and terminal input guard coverage.
 - Verified on `vicliu@192.168.50.92`: Debian package-time CTest passed 80/80, the regenerated `/home/vicliu/lofibox_0.1.0-1_arm64.deb` installed over the already-installed `lofibox (0.1.0-1)` with `Unpacking lofibox (0.1.0-1) over (0.1.0-1)`, and installed smoke passed for `/usr/bin/lofibox-tui`, `lofibox tui --help`, `lofibox-tui --once --no-color --charset ascii`, and `sh debian/tests/smoke`.
+
+## 2026-05-21 Local Media Root Persistence Convergence Update
+
+This update records implementation convergence for durable local media roots:
+
+- Enabled local media roots now persist as `SourceProfilesDomain` local-root profiles, including stable id, display name, local filesystem path, enabled/default-eligible flags, and no credential reference.
+- `~/Music` is now the projected default local media root when no enabled local-root profile exists; with `HOME=/root`, the default resolves to `/root/Music`.
+- GUI/device startup uses `LibraryMutationService::beginAsyncRefreshConfiguredLibrary()` when no diagnostic roots are supplied, so x11/device app startup reads enabled roots through application services instead of target-local defaults.
+- `LibraryMutationService` now exposes configured-root refresh methods, and local-root add/remove/enable/disable marks the in-memory library index stale before the next refresh/rebuild.
+- Direct CLI supports `lofibox source local-root list/add/remove/enable/disable` and `lofibox library root list/add/remove/enable/disable` as aliases over the same source-profile local-root lifecycle.
+- `lofibox library scan [path...]` remains a temporary diagnostic scan; commands without explicit roots refresh from durable enabled local roots.
+- Runtime `LibraryRefresh` is a live in-memory refresh request only: it reloads enabled durable roots and starts async library refresh, but it does not mutate `SourceProfilesDomain`.
+- Local-root profiles are filtered out of remote browse/search behavior while still round-tripping through profile persistence.
+- Windows/MSVC builds now compile sources as UTF-8 with `/utf-8`, which is required by existing TUI Unicode source files.
+- Smoke coverage now includes default `~/Music` projection, configured-root library refresh, local-root direct CLI add/list/enable/disable/remove, XDG local-root persistence without credentials, runtime library refresh, and TUI/runtime projection checks.

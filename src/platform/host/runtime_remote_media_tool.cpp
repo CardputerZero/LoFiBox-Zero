@@ -28,6 +28,7 @@ namespace {
 std::string toKindString(app::RemoteServerKind kind)
 {
     switch (kind) {
+    case app::RemoteServerKind::LocalRoot: return "local-root";
     case app::RemoteServerKind::Jellyfin: return "jellyfin";
     case app::RemoteServerKind::OpenSubsonic: return "opensubsonic";
     case app::RemoteServerKind::Navidrome: return "navidrome";

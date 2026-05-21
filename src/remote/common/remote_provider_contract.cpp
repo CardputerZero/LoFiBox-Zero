@@ -9,6 +9,7 @@ namespace lofibox::remote {
 std::string_view remoteServerKindId(app::RemoteServerKind kind) noexcept
 {
     switch (kind) {
+    case app::RemoteServerKind::LocalRoot: return "local-root";
     case app::RemoteServerKind::Jellyfin: return "jellyfin";
     case app::RemoteServerKind::OpenSubsonic: return "opensubsonic";
     case app::RemoteServerKind::Navidrome: return "navidrome";
@@ -31,6 +32,7 @@ std::string_view remoteServerKindId(app::RemoteServerKind kind) noexcept
 std::string_view remoteProviderFamily(app::RemoteServerKind kind) noexcept
 {
     switch (kind) {
+    case app::RemoteServerKind::LocalRoot: return "local-root";
     case app::RemoteServerKind::Jellyfin: return "jellyfin";
     case app::RemoteServerKind::OpenSubsonic:
     case app::RemoteServerKind::Navidrome:
@@ -73,6 +75,10 @@ RemoteProviderManifest remoteProviderManifest(app::RemoteServerKind kind)
     };
 
     switch (kind) {
+    case app::RemoteServerKind::LocalRoot:
+        manifest.display_name = "Local Folder";
+        manifest.capabilities = {RemoteProviderCapability::BrowseCatalog, RemoteProviderCapability::ReadOnly};
+        break;
     case app::RemoteServerKind::Jellyfin:
         manifest.display_name = "Jellyfin";
         manifest.capabilities.push_back(RemoteProviderCapability::BrowseCatalog);

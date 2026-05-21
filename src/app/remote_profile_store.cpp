@@ -10,6 +10,7 @@ namespace lofibox::app {
 std::string remoteServerKindToString(RemoteServerKind kind)
 {
     switch (kind) {
+    case RemoteServerKind::LocalRoot: return "local-root";
     case RemoteServerKind::Jellyfin: return "jellyfin";
     case RemoteServerKind::OpenSubsonic: return "opensubsonic";
     case RemoteServerKind::Navidrome: return "navidrome";
@@ -37,6 +38,9 @@ RemoteServerKind remoteServerKindFromString(const std::string& value)
     });
     if (lower == "opensubsonic" || lower == "subsonic") {
         return RemoteServerKind::OpenSubsonic;
+    }
+    if (lower == "local-root" || lower == "local_media_root" || lower == "localroot" || lower == "local") {
+        return RemoteServerKind::LocalRoot;
     }
     if (lower == "navidrome") {
         return RemoteServerKind::Navidrome;

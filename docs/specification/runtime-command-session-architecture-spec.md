@@ -47,6 +47,7 @@ This document defines the runtime command/session layer that sits between interf
 - `RuntimeCommandResult` is the structured outcome of a runtime command.
 - `RuntimeSnapshot` is structured live truth before GUI rows, terminal text, desktop notifications, or automation payloads.
 - `RuntimeSnapshot` must also be rich enough for terminal-native projection. TUI widgets, runtime CLI JSON, and future MCP-style state queries should project from the same snapshot semantics instead of each deriving state from lower layers.
+- `RuntimeCommandKind::LibraryRefresh` is a narrow runtime request to refresh the running instance's in-memory library index from the current durable enabled local roots.
 - `RuntimeHost` is the sole in-process owner of live runtime lifetime, tick, runtime domains, runtime bus, server, local client, and optional external transport.
 - `RuntimeSessionFacade` is the process-local composition facade over playback runtime, queue runtime, EQ runtime, remote session runtime, live settings runtime, and snapshot assembly. It is not a second controller and must not keep accumulating business logic.
 - `PlaybackRuntime`, `QueueRuntime`, `EqRuntime`, `RemoteSessionRuntime`, and `SettingsRuntime` are the live runtime domains that own current session truth.
@@ -211,6 +212,24 @@ Runtime code must not call back into `AppRuntimeContext` to resolve or start a G
 Live settings runtime owns only settings that immediately affect a running session, such as active output mode, active network policy, active sleep timer, or active projection mode once those settings exist.
 
 Durable settings persistence remains an application/persistence concern.
+
+### 5.6 Library Refresh Runtime Request
+
+The runtime layer may expose a narrow library refresh command for a running
+instance.
+
+This command:
+
+- reloads enabled local media roots from durable `SourceProfilesDomain`
+- starts or performs a library refresh/rebuild for the running instance
+- updates in-memory library readiness and scan progress through existing application services
+
+This command must not:
+
+- add, remove, enable, disable, or persist local roots
+- write `SourceProfilesDomain`
+- redefine default media-root semantics
+- treat runtime state as durable source-profile truth
 
 ## 6. Command And Query Contract
 

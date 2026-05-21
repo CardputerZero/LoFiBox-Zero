@@ -114,8 +114,28 @@ Each persisted source profile should be able to carry at least:
 - `auth_mode`
 - `credential_ref`
 - `default_eligible`
+- `enabled`
 - user-configured TLS or certificate policy
 - user-configured read-only versus writable intent when relevant
+
+#### 6.2.1 Local Media Root Source Profiles
+
+Local media roots are part of `SourceProfilesDomain`.
+They must not be persisted in a parallel `LibraryRootsDomain` unless this specification is changed first.
+
+A local media root source profile should carry:
+
+- `kind`: `local-root` or `local_media_root`
+- `id`: a stable source id
+- `name`: a display label
+- `local_root`: the filesystem path to scan
+- `default_eligible`: whether it may act as the default local source
+- `enabled`: whether the scanner should include it
+- read/write intent when product behavior exposes writeback for that root
+- no `credential_ref` by default
+
+The current implementation may temporarily store `local_root` in an existing transport field such as `base_url` while preserving the product meaning as a local filesystem path.
+That implementation detail must not turn `base_url` into the long-term semantic name for local roots.
 
 The domain should also persist:
 

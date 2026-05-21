@@ -61,6 +61,26 @@ int main()
     assert(loaded_after_delete.front().password.empty());
     assert(loaded_after_delete.front().api_token.empty());
 
+    lofibox::app::RemoteServerProfile local_root{};
+    local_root.kind = lofibox::app::RemoteServerKind::LocalRoot;
+    local_root.id = "local-root-home";
+    local_root.name = "Home Music";
+    local_root.local_root = (root / "Music").string();
+    local_root.base_url = local_root.local_root;
+    local_root.default_eligible = false;
+    local_root.enabled = false;
+    local_root.credential_ref.id = "must-not-persist";
+
+    assert(store.saveProfiles({local_root}));
+    const auto loaded_local_roots = store.loadProfiles();
+    assert(loaded_local_roots.size() == 1U);
+    assert(loaded_local_roots.front().kind == lofibox::app::RemoteServerKind::LocalRoot);
+    assert(loaded_local_roots.front().local_root == (root / "Music").string());
+    assert(loaded_local_roots.front().base_url == loaded_local_roots.front().local_root);
+    assert(!loaded_local_roots.front().default_eligible);
+    assert(!loaded_local_roots.front().enabled);
+    assert(loaded_local_roots.front().credential_ref.id.empty());
+
     std::filesystem::remove_all(root, ec);
     return 0;
 }

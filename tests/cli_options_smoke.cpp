@@ -7,6 +7,10 @@
 
 #include "targets/cli_options.h"
 
+#ifndef LOFIBOX_VERSION
+#error "LOFIBOX_VERSION must be inherited from the core compile definitions"
+#endif
+
 namespace {
 
 bool run(std::vector<std::string> args, std::string& out_text)
@@ -26,18 +30,29 @@ bool run(std::vector<std::string> args, std::string& out_text)
 
 int main()
 {
+    const std::string expected_version{LOFIBOX_VERSION};
+    const std::string expected_json = "{\"name\":\"lofibox\",\"version\":\"" + expected_version + "\"}\n";
+
     std::string out{};
-    bool handled = run({"lofibox", "version", "--json"}, out);
+    bool handled = run({"lofibox", "--version"}, out);
     assert(handled);
-    assert(out.find("\"name\":\"lofibox\"") != std::string::npos);
+    assert(out == "lofibox " + expected_version + "\n");
+
+    handled = run({"lofibox", "--version", "--json"}, out);
+    assert(handled);
+    assert(out == expected_json);
+
+    handled = run({"lofibox", "version", "--json"}, out);
+    assert(handled);
+    assert(out == expected_json);
 
     handled = run({"lofibox", "--json", "version"}, out);
     assert(handled);
-    assert(out.find("\"version\"") != std::string::npos);
+    assert(out == expected_json);
 
     handled = run({"lofibox", "--version", "--porcelain"}, out);
     assert(handled);
-    assert(out.find("version\t") != std::string::npos);
+    assert(out == "version\t" + expected_version + "\n");
 
     handled = run({"lofibox", "--quiet", "version"}, out);
     assert(handled);

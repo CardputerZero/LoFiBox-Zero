@@ -39,6 +39,11 @@ void LibraryRepository::markLoading() noexcept
     state_ = LibraryIndexState::Loading;
 }
 
+void LibraryRepository::markStale() noexcept
+{
+    state_ = LibraryIndexState::Uninitialized;
+}
+
 void LibraryRepository::markDegraded() noexcept
 {
     library_.degraded = true;

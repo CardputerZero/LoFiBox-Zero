@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "app/library_controller.h"
+#include "application/source_profile_command_service.h"
 
 namespace lofibox::application {
 
@@ -25,6 +26,11 @@ void LibraryMutationService::startLoading() const noexcept
     controller_.startLoading();
 }
 
+void LibraryMutationService::markConfiguredLibraryStale() const noexcept
+{
+    controller_.markStale();
+}
+
 void LibraryMutationService::refreshLibrary(const std::vector<std::filesystem::path>& media_roots, const app::MetadataProvider& metadata_provider) const
 {
     controller_.refreshLibrary(media_roots, metadata_provider);
@@ -39,6 +45,16 @@ bool LibraryMutationService::refreshLibrary(const std::vector<std::filesystem::p
     return true;
 }
 
+bool LibraryMutationService::refreshConfiguredLibrary() const
+{
+    if (services_ == nullptr || !services_->metadata.metadata_provider) {
+        return false;
+    }
+    const auto roots = SourceProfileCommandService{*services_}.enabledLocalRoots();
+    controller_.refreshLibrary(roots, *services_->metadata.metadata_provider);
+    return true;
+}
+
 bool LibraryMutationService::beginAsyncRefreshLibrary(const std::vector<std::filesystem::path>& media_roots) const
 {
     if (services_ == nullptr || !services_->metadata.metadata_provider) {
@@ -46,6 +62,17 @@ bool LibraryMutationService::beginAsyncRefreshLibrary(const std::vector<std::fil
         return false;
     }
     controller_.beginAsyncRefreshLibrary(media_roots, services_->metadata.metadata_provider);
+    return true;
+}
+
+bool LibraryMutationService::beginAsyncRefreshConfiguredLibrary() const
+{
+    if (services_ == nullptr || !services_->metadata.metadata_provider) {
+        controller_.beginAsyncRefreshLibrary({}, nullptr);
+        return false;
+    }
+    const auto roots = SourceProfileCommandService{*services_}.enabledLocalRoots();
+    controller_.beginAsyncRefreshLibrary(roots, services_->metadata.metadata_provider);
     return true;
 }
 

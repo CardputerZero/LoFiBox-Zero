@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.2.1 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.2 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -17,6 +17,10 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
 
 include(GNUInstallDirs)
 include(CTest)
@@ -221,7 +225,6 @@ add_library(lofibox_zero_target_cli STATIC
 )
 target_include_directories(lofibox_zero_target_cli PUBLIC "${PROJECT_SOURCE_DIR}/src")
 target_compile_features(lofibox_zero_target_cli PUBLIC cxx_std_20)
-target_compile_definitions(lofibox_zero_target_cli PUBLIC LOFIBOX_VERSION=\"${PROJECT_VERSION}\")
 target_link_libraries(lofibox_zero_target_cli PUBLIC lofibox_zero_core)
 if(MSVC)
     target_compile_options(lofibox_zero_target_cli PRIVATE /W4 /permissive- /FS)
@@ -600,6 +603,10 @@ if(BUILD_TESTING)
     add_executable(lofibox_library_scan_smoke tests/library_scan_smoke.cpp)
     target_link_libraries(lofibox_library_scan_smoke PRIVATE lofibox_zero_core)
     add_test(NAME lofibox_library_scan_smoke COMMAND lofibox_library_scan_smoke)
+
+    add_executable(lofibox_local_root_source_profile_smoke tests/local_root_source_profile_smoke.cpp)
+    target_link_libraries(lofibox_local_root_source_profile_smoke PRIVATE lofibox_zero_core)
+    add_test(NAME lofibox_local_root_source_profile_smoke COMMAND lofibox_local_root_source_profile_smoke)
 
     add_executable(lofibox_library_controller_smoke tests/library_controller_smoke.cpp)
     target_link_libraries(lofibox_library_controller_smoke PRIVATE lofibox_zero_core)

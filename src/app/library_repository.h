@@ -21,6 +21,7 @@ public:
     [[nodiscard]] const std::vector<::lofibox::library::LibraryMigration>& migrationPlan() const noexcept;
 
     void markLoading() noexcept;
+    void markStale() noexcept;
     void markDegraded() noexcept;
     void rescan(
         const std::vector<std::filesystem::path>& media_roots,

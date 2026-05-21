@@ -1,3 +1,15 @@
+lofibox (0.2.2-1) UNRELEASED; urgency=medium
+
+  * New upstream release 0.2.2.
+  * Persist local media roots through SourceProfilesDomain local-root profiles
+    with source and library CLI command surfaces.
+  * Default unconfigured local library startup to ~/Music through application
+    services, including /root/Music when HOME=/root.
+  * Add runtime library-refresh for running-instance configured-root rescans.
+  * Fix Windows/MSVC UTF-8 source compilation and curl helper lookup.
+
+ -- LoFiBox contributors <maintainers@example.invalid>  Thu, 21 May 2026 00:00:00 +0800
+
 lofibox (0.2.1-1) UNRELEASED; urgency=medium
 
   * Fix Cardputer Zero APPLaunch startup through a wrapper that inherits

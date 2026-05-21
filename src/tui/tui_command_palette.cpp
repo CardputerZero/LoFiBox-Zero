@@ -45,6 +45,7 @@ std::optional<runtime::RuntimeCommand> commandPaletteRuntimeCommand(std::string_
     if (command == "next") return makeCommand(runtime::RuntimeCommandKind::QueueStep, runtime::RuntimeCommandPayload::queueStep(1));
     if (command == "prev" || command == "previous") return makeCommand(runtime::RuntimeCommandKind::QueueStep, runtime::RuntimeCommandPayload::queueStep(-1));
     if (command == "source reconnect" || command == "remote reconnect") return makeCommand(runtime::RuntimeCommandKind::RemoteReconnect);
+    if (command == "library refresh" || command == "refresh library") return makeCommand(runtime::RuntimeCommandKind::LibraryRefresh);
     if (command == "eq on" || command == "eq enable") return makeCommand(runtime::RuntimeCommandKind::EqEnable);
     if (command == "eq off" || command == "eq disable") return makeCommand(runtime::RuntimeCommandKind::EqDisable);
     if (command == "eq reset") return makeCommand(runtime::RuntimeCommandKind::EqReset);

@@ -27,7 +27,11 @@ using namespace runtime_detail;
 
 std::optional<fs::path> resolveCurlExecutable()
 {
+#if defined(_WIN32)
+    return resolveExecutablePath(L"CURL_PATH", L"curl.exe");
+#else
     return resolveExecutablePath("CURL_PATH", "curl");
+#endif
 }
 
 class FfmpegArtworkProvider final : public app::ArtworkProvider {

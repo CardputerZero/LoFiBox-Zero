@@ -22,10 +22,13 @@ std::string field(const app::RemoteServerProfile& profile, std::string_view key)
     if (key == "id") return profile.id;
     if (key == "name") return profile.name;
     if (key == "base_url") return profile.base_url;
-    if (key == "username") return profile.username;
-    if (key == "credential_ref") return profile.credential_ref.id;
+    if (key == "local_root") return profile.local_root;
+    if (key == "username") return profile.kind == app::RemoteServerKind::LocalRoot ? std::string{} : profile.username;
+    if (key == "credential_ref") return profile.kind == app::RemoteServerKind::LocalRoot ? std::string{} : profile.credential_ref.id;
     if (key == "verify_peer") return profile.tls_policy.verify_peer ? "true" : "false";
     if (key == "allow_self_signed") return profile.tls_policy.allow_self_signed ? "true" : "false";
+    if (key == "default_eligible") return profile.default_eligible ? "true" : "false";
+    if (key == "enabled") return profile.enabled ? "true" : "false";
     return {};
 }
 
@@ -41,7 +44,10 @@ std::string lineForProfile(const app::RemoteServerProfile& profile)
         << runtime_detail::jsonEscape(field(safe, "username")) << separator
         << runtime_detail::jsonEscape(field(safe, "credential_ref")) << separator
         << field(safe, "verify_peer") << separator
-        << field(safe, "allow_self_signed");
+        << field(safe, "allow_self_signed") << separator
+        << runtime_detail::jsonEscape(field(safe, "local_root")) << separator
+        << field(safe, "default_eligible") << separator
+        << field(safe, "enabled");
     return out.str();
 }
 
@@ -154,13 +160,36 @@ std::vector<app::RemoteServerProfile> XdgRemoteProfileStore::loadProfiles() cons
         profile.credential_ref.id = unescapeStoredValue(values[5]);
         profile.tls_policy.verify_peer = values[6] != "false";
         profile.tls_policy.allow_self_signed = values[7] == "true";
-        const auto secret_id = profile.credential_ref.id.empty() ? profile.id : profile.credential_ref.id;
-        if (const auto found = secrets.find(secret_id); found != secrets.end()) {
-            if (!found->second.username.empty()) {
-                profile.username = found->second.username;
+        if (values.size() >= 9U) {
+            profile.local_root = unescapeStoredValue(values[8]);
+        }
+        if (values.size() >= 10U) {
+            profile.default_eligible = values[9] != "false";
+        }
+        if (values.size() >= 11U) {
+            profile.enabled = values[10] != "false";
+        }
+        if (profile.kind == app::RemoteServerKind::LocalRoot) {
+            if (profile.local_root.empty()) {
+                profile.local_root = profile.base_url;
             }
-            profile.password = found->second.password;
-            profile.api_token = found->second.api_token;
+            if (profile.base_url.empty()) {
+                profile.base_url = profile.local_root;
+            }
+            profile.username.clear();
+            profile.password.clear();
+            profile.api_token.clear();
+            profile.credential_ref.id.clear();
+        }
+        if (profile.kind != app::RemoteServerKind::LocalRoot) {
+            const auto secret_id = profile.credential_ref.id.empty() ? profile.id : profile.credential_ref.id;
+            if (const auto found = secrets.find(secret_id); found != secrets.end()) {
+                if (!found->second.username.empty()) {
+                    profile.username = found->second.username;
+                }
+                profile.password = found->second.password;
+                profile.api_token = found->second.api_token;
+            }
         }
         profiles.push_back(std::move(profile));
     }

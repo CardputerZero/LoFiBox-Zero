@@ -21,6 +21,11 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.2" date="2026-05-21">
+      <description>
+        <p>Persists local media roots through source profiles, defaults unconfigured local library startup to ~/Music, adds source/library local-root CLI commands, and adds runtime library refresh for running instances.</p>
+      </description>
+    </release>
     <release version="0.2.1" date="2026-05-11">
       <description>
         <p>Fixes Cardputer Zero APPLaunch startup by adding a wrapper that resolves the ST7789V framebuffer and keyboard device from APPLaunch environment or runtime detection, installs a stable device binary path, and uses a Cardputer-sized LoFiBox icon.</p>

@@ -170,6 +170,8 @@ RuntimeCommandResult RuntimeCommandDispatcher::dispatch(const RuntimeCommand& co
             session_.settings().applyLive(payload->output_mode, payload->network_policy, payload->sleep_timer);
             return applied(command, "SETTINGS_APPLY_LIVE", "Live settings submitted.", true);
         }
+    case RuntimeCommandKind::LibraryRefresh:
+        return applied(command, "LIBRARY_REFRESH", "Library refresh requested.", session_.refreshLibrary());
     case RuntimeCommandKind::RuntimeShutdown:
         session_.settings().requestShutdown();
         return applied(command, "RUNTIME_SHUTDOWN", "Runtime shutdown requested.", true);

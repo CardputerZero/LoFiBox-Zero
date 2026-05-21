@@ -40,6 +40,7 @@ public:
     [[nodiscard]] bool startRemoteItem(const std::string& profile_id, const std::string& item_id);
     [[nodiscard]] bool stepQueue(int delta);
     [[nodiscard]] bool jumpQueue(int queue_index);
+    [[nodiscard]] bool refreshLibrary();
     void tick(double delta_seconds);
     [[nodiscard]] RuntimeSnapshot snapshot(std::uint64_t version) const;
 

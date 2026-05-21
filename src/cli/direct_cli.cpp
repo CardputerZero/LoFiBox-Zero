@@ -365,6 +365,9 @@ void printDirectHelp(std::ostream& out)
         << "  lofibox source probe <id>\n"
         << "  lofibox source auth-status <profile-id>\n"
         << "  lofibox source capabilities <profile-id>\n"
+        << "  lofibox source local-root list\n"
+        << "  lofibox source local-root add <path> [--name <label>]\n"
+        << "  lofibox source local-root remove|enable|disable <id-or-path>\n"
         << "  lofibox credentials list\n"
         << "  lofibox credentials show-ref <profile-id-or-ref>\n"
         << "  lofibox credentials set <profile-id-or-ref> [--username <user>] [--password-stdin] [--token-stdin]\n"
@@ -373,6 +376,9 @@ void printDirectHelp(std::ostream& out)
         << "  lofibox credentials status|validate <profile-id-or-ref>\n"
         << "  lofibox credentials delete <profile-id-or-ref>\n"
         << "  lofibox library scan [path...]\n"
+        << "  lofibox library root list\n"
+        << "  lofibox library root add <path> [--name <label>]\n"
+        << "  lofibox library root remove|enable|disable <id-or-path>\n"
         << "  lofibox library status [--root <path>]\n"
         << "  lofibox library list tracks|albums|artists|genres|composers|compilations [--root <path>]\n"
         << "  lofibox library query tracks|albums [--artist <name>] [--album-id <id>] [--genre <name>] [--root <path>]\n"
@@ -456,11 +462,15 @@ bool hasCredentialPatch(const application::CredentialSecretPatch& patch) noexcep
 
 CliFields profileFields(const app::RemoteServerProfile& profile, application::SourceProfileCommandService source_profiles)
 {
+    const auto local_root = source_profiles.localRootPath(profile);
     return {
         {"id", profile.id},
         {"kind", app::remoteServerKindToString(profile.kind)},
         {"name", source_profiles.profileLabel(profile)},
         {"base_url", profile.base_url.empty() ? "-" : profile.base_url},
+        {"local_root", local_root.empty() ? "-" : local_root.string()},
+        {"enabled", boolLabel(profile.enabled)},
+        {"default_eligible", boolLabel(profile.default_eligible)},
         {"username", source_profiles.usernameLabel(profile)},
         {"credential_ref", profile.credential_ref.id.empty() ? "-" : profile.credential_ref.id},
         {"readiness", source_profiles.readiness(profile)},
@@ -750,6 +760,78 @@ int runFingerprintCommand(const ParsedArgs& args, application::AppServiceRegistr
     return identity.found || !identity.fingerprint.empty() ? 0 : static_cast<int>(CliExitCode::NotFound);
 }
 
+int runLocalRootCommand(
+    const ParsedArgs& args,
+    application::AppServiceRegistry& registry,
+    std::ostream& out,
+    std::ostream& err,
+    std::size_t verb_index,
+    std::string usage_prefix)
+{
+    const auto format = outputOptions(args);
+    if (args.positional.size() <= verb_index || args.positional[verb_index] == "help") {
+        printDirectHelp(out);
+        return 0;
+    }
+
+    const auto verb = args.positional[verb_index];
+    if (verb == "list") {
+        std::vector<CliFields> rows{};
+        for (const auto& profile : registry.sourceProfiles().listLocalRoots()) {
+            rows.push_back(profileFields(profile, registry.sourceProfiles()));
+        }
+        printPorcelainRows(out, format, rows, "NO LOCAL ROOTS");
+        return 0;
+    }
+
+    if (verb == "add") {
+        if (args.positional.size() <= verb_index + 1U) {
+            return directError(args, err, CliExitCode::Usage, "local-root add requires a path.", "INVALID_ARGUMENT", "path", "local media directory", usage_prefix + " add <path> [--name <label>]");
+        }
+        const auto result = registry.sourceProfiles().addLocalRoot(
+            std::filesystem::path{std::string{args.positional[verb_index + 1U]}},
+            optionValue(args, "name"));
+        if (!result.command.accepted) {
+            return directError(args, err, CliExitCode::Persistence, result.command.summary, result.command.code);
+        }
+        registry.libraryMutations().markConfiguredLibraryStale();
+        auto fields = profileFields(result.profile, registry.sourceProfiles());
+        fields.insert(fields.begin(), {"status", "ADDED"});
+        printObject(out, format, fields);
+        return 0;
+    }
+
+    if (verb == "remove" || verb == "enable" || verb == "disable") {
+        if (args.positional.size() <= verb_index + 1U) {
+            return directError(args, err, CliExitCode::Usage, "local-root " + std::string{verb} + " requires an id or path.", "INVALID_ARGUMENT", "id-or-path", "local root id or path", usage_prefix + " " + std::string{verb} + " <id-or-path>");
+        }
+        const auto target = args.positional[verb_index + 1U];
+        application::LocalRootCommandResult result{};
+        if (verb == "remove") {
+            result = registry.sourceProfiles().removeLocalRoot(target);
+        } else if (verb == "enable") {
+            result = registry.sourceProfiles().enableLocalRoot(target);
+        } else {
+            result = registry.sourceProfiles().disableLocalRoot(target);
+        }
+        if (!result.command.accepted) {
+            return directError(
+                args,
+                err,
+                result.command.code.find("not-found") != std::string::npos ? CliExitCode::NotFound : CliExitCode::Persistence,
+                result.command.summary,
+                result.command.code);
+        }
+        registry.libraryMutations().markConfiguredLibraryStale();
+        auto fields = profileFields(result.profile, registry.sourceProfiles());
+        fields.insert(fields.begin(), {"status", result.command.summary});
+        printObject(out, format, fields);
+        return 0;
+    }
+
+    return directError(args, err, CliExitCode::Usage, "unknown local-root command: " + std::string{verb}, "UNKNOWN_COMMAND", "verb", "local-root subcommand", usage_prefix + " list|add|remove|enable|disable");
+}
+
 int runSourceCommand(const ParsedArgs& args, application::AppServiceRegistry& registry, std::ostream& out, std::ostream& err)
 {
     if (args.positional.size() < 2U || args.positional[1] == "help") {
@@ -760,6 +842,9 @@ int runSourceCommand(const ParsedArgs& args, application::AppServiceRegistry& re
     const auto format = outputOptions(args);
     auto profiles = registry.sourceProfiles().loadProfiles();
     const auto verb = args.positional[1];
+    if (verb == "local-root") {
+        return runLocalRootCommand(args, registry, out, err, 2U, "lofibox source local-root");
+    }
     if (verb == "list") {
         std::vector<CliFields> rows{};
         rows.reserve(profiles.size());
@@ -1003,6 +1088,12 @@ int runLibraryCommand(
     }
     const auto format = outputOptions(args);
     const auto verb = args.positional[1];
+    auto refreshForRead = [&]() {
+        const auto roots = rootsFromOption(args);
+        return roots.empty()
+            ? registry.libraryMutations().refreshConfiguredLibrary()
+            : registry.libraryMutations().refreshLibrary(roots);
+    };
     auto printStatus = [&]() {
         const auto& model = registry.libraryQueries().model();
         printObject(out, format, {
@@ -1019,6 +1110,10 @@ int runLibraryCommand(
         });
     };
 
+    if (verb == "root") {
+        return runLocalRootCommand(args, registry, out, err, 2U, "lofibox library root");
+    }
+
     if (verb == "scan") {
         std::vector<std::filesystem::path> roots{};
         for (std::size_t index = 2; index < args.positional.size(); ++index) {
@@ -1027,7 +1122,10 @@ int runLibraryCommand(
         for (const auto& root : rootsFromOption(args)) {
             roots.push_back(root);
         }
-        if (!registry.libraryMutations().refreshLibrary(roots)) {
+        const bool refreshed = roots.empty()
+            ? registry.libraryMutations().refreshConfiguredLibrary()
+            : registry.libraryMutations().refreshLibrary(roots);
+        if (!refreshed) {
             err << "library scan unavailable.\n";
             return static_cast<int>(CliExitCode::Persistence);
         }
@@ -1036,7 +1134,7 @@ int runLibraryCommand(
     }
 
     if (verb == "status") {
-        if (!registry.libraryMutations().refreshLibrary(rootsFromOption(args))) {
+        if (!refreshForRead()) {
             err << "library scan unavailable.\n";
             return static_cast<int>(CliExitCode::Persistence);
         }
@@ -1049,7 +1147,7 @@ int runLibraryCommand(
             err << "library list requires tracks, albums, artists, genres, composers, or compilations.\n";
             return static_cast<int>(CliExitCode::Usage);
         }
-        if (!registry.libraryMutations().refreshLibrary(rootsFromOption(args))) {
+        if (!refreshForRead()) {
             err << "library scan unavailable.\n";
             return static_cast<int>(CliExitCode::Persistence);
         }
@@ -1088,7 +1186,7 @@ int runLibraryCommand(
         const auto noun = args.positional[2];
         const bool structured = noun == "tracks" || noun == "albums";
         if (structured) {
-            if (!registry.libraryMutations().refreshLibrary(rootsFromOption(args))) {
+            if (!refreshForRead()) {
                 err << "library scan unavailable.\n";
                 return static_cast<int>(CliExitCode::Persistence);
             }
@@ -1143,7 +1241,7 @@ int runLibraryCommand(
             }
             query.append(args.positional[index]);
         }
-        if (!registry.libraryMutations().refreshLibrary(rootsFromOption(args))) {
+        if (!refreshForRead()) {
             err << "library scan unavailable.\n";
             return static_cast<int>(CliExitCode::Persistence);
         }
@@ -1287,7 +1385,11 @@ int runSearchCommand(const ParsedArgs& args, application::AppServiceRegistry& re
         if (!query.empty()) query.push_back(' ');
         query.append(args.positional[index]);
     }
-    if (!registry.libraryMutations().refreshLibrary(rootsFromOption(args))) {
+    const auto roots = rootsFromOption(args);
+    const bool refreshed = roots.empty()
+        ? registry.libraryMutations().refreshConfiguredLibrary()
+        : registry.libraryMutations().refreshLibrary(roots);
+    if (!refreshed) {
         err << "library scan unavailable.\n";
         return static_cast<int>(CliExitCode::Persistence);
     }
@@ -1316,6 +1418,9 @@ int runSearchCommand(const ParsedArgs& args, application::AppServiceRegistry& re
         }
 
         for (const auto index : profile_indexes) {
+            if (profiles[index].kind == app::RemoteServerKind::LocalRoot) {
+                continue;
+            }
             auto result = registry.remoteBrowseQueries().search(profiles[index], profiles.size(), query, 20);
             if (!result.command.accepted && optionPresent(args, "source")) {
                 err << result.command.summary << '\n';

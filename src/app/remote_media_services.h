@@ -14,6 +14,7 @@
 namespace lofibox::app {
 
 enum class RemoteServerKind {
+    LocalRoot,
     Jellyfin,
     OpenSubsonic,
     Navidrome,
@@ -36,11 +37,14 @@ struct RemoteServerProfile {
     std::string id{};
     std::string name{};
     std::string base_url{};
+    std::string local_root{};
     std::string username{};
     std::string password{};
     std::string api_token{};
     ::lofibox::security::CredentialRef credential_ref{};
     ::lofibox::security::TlsPolicy tls_policy{};
+    bool default_eligible{true};
+    bool enabled{true};
 };
 
 struct RemoteSourceSession {

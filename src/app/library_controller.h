@@ -52,6 +52,7 @@ public:
     [[nodiscard]] LibraryModel& mutableModel() noexcept;
 
     void startLoading() noexcept;
+    void markStale() noexcept;
     void refreshLibrary(const std::vector<std::filesystem::path>& media_roots, const MetadataProvider& metadata_provider);
     void beginAsyncRefreshLibrary(
         const std::vector<std::filesystem::path>& media_roots,

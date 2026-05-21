@@ -211,6 +211,8 @@ Owns product library mutations such as:
 - update play-count and recently-played facts when commanded by playback workflow
 
 It must not own current GUI browse context.
+It may refresh or rebuild from enabled local roots, but the durable local-root lifecycle belongs to `SourceProfileCommandService`.
+CLI-supplied scan paths are temporary diagnostic roots unless a source-profile command persists them.
 
 ### 6.6 Library Open Action Service
 
@@ -238,9 +240,16 @@ Owns source-profile lifecycle:
 - set active/default profile when product behavior allows it
 - attach or rotate credential references
 - probe profile availability
+- add local media root
+- remove local media root
+- enable or disable local media root
+- list local media roots
+- project enabled local media roots for library refresh
+- set default local media root if product behavior exposes it
 
 It must not expose character-by-character field editing.
 GUI remote setup pages are only one editor frontend over this service.
+Local media root profiles are durable `SourceProfilesDomain` objects, not library-index internals.
 
 ### 6.8 Remote Browse Query Service
 
@@ -331,6 +340,7 @@ Examples:
 
 - library scan
 - library status
+- source local-root add/remove/enable/disable/list
 - source profile add/update/delete/list
 - credential set/delete/status
 - cache status/clear
@@ -355,10 +365,13 @@ Examples:
 - queue add/remove/move when it affects the active live queue
 - now/status for live playback
 - apply EQ to currently playing audio
+- request library refresh in the running instance when it reloads durable enabled roots and rebuilds only in-memory library state
 
 Runtime commands must use the implemented `RuntimeCommandClient` and `RuntimeCommandServer` path.
 They must not start a second independent app runtime to control playback.
 They must not mutate persisted state behind the running app's back to simulate live state changes.
+Runtime library refresh commands must not add, remove, enable, disable, or persist local roots.
+Those durable mutations remain direct source-profile commands.
 The transport-neutral runtime command/query/result/snapshot contract is the authority above the Unix socket transport and any future transport.
 
 ### 7.3 Ambiguous Commands

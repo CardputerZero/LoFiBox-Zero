@@ -22,7 +22,7 @@ A release candidate should satisfy:
 
 Release tags should be traceable by `debian/watch`.
 Source releases are created by the `Source Release` GitHub Actions workflow.
-Run it from `main` with an upstream version such as `0.2.1`; it validates
+Run it from `main` with an upstream version such as `X.Y.Z`; it validates
 release metadata, creates the annotated `vX.Y.Z` tag, creates the GitHub
 Release, and can trigger the `lofibox-apt` publishing workflow.
 

@@ -229,6 +229,53 @@ int main()
     assert(code && *code == 0);
     assert(store->profiles.front().password.empty());
 
+    code = run({"lofibox", "source", "local-root", "add", root.string(), "--name", "Local", "--json"}, services, out, err);
+    assert(code && *code == 0);
+    assert(out.find("\"kind\":\"local-root\"") != std::string::npos);
+    std::string local_root_id{};
+    bool found_local_root = false;
+    for (const auto& profile : store->profiles) {
+        if (profile.kind == lofibox::app::RemoteServerKind::LocalRoot) {
+            found_local_root = true;
+            local_root_id = profile.id;
+            assert(profile.enabled);
+            assert(profile.local_root == root.string());
+            assert(profile.credential_ref.id.empty());
+        }
+    }
+    assert(found_local_root);
+    assert(!local_root_id.empty());
+
+    code = run({"lofibox", "source", "local-root", "list", "--json"}, services, out, err);
+    assert(code && *code == 0);
+    assert(out.find("\"id\":\"" + local_root_id + "\"") != std::string::npos);
+
+    code = run({"lofibox", "library", "status", "--json"}, services, out, err);
+    assert(code && *code == 0);
+    assert(out.find("\"tracks\":\"1\"") != std::string::npos);
+
+    code = run({"lofibox", "library", "root", "disable", local_root_id, "--json"}, services, out, err);
+    assert(code && *code == 0);
+    for (const auto& profile : store->profiles) {
+        if (profile.id == local_root_id) {
+            assert(!profile.enabled);
+        }
+    }
+
+    code = run({"lofibox", "source", "local-root", "enable", root.string(), "--json"}, services, out, err);
+    assert(code && *code == 0);
+    for (const auto& profile : store->profiles) {
+        if (profile.id == local_root_id) {
+            assert(profile.enabled);
+        }
+    }
+
+    code = run({"lofibox", "library", "root", "remove", local_root_id, "--json"}, services, out, err);
+    assert(code && *code == 0);
+    for (const auto& profile : store->profiles) {
+        assert(profile.kind != lofibox::app::RemoteServerKind::LocalRoot);
+    }
+
     code = run({"lofibox", "library", "scan", root.string(), "--json"}, services, out, err);
     assert(code && *code == 0);
     assert(out.find("\"tracks\":\"1\"") != std::string::npos);

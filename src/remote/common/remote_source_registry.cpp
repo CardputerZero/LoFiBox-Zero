@@ -7,6 +7,7 @@ namespace lofibox::remote {
 bool RemoteSourceRegistry::supported(app::RemoteServerKind kind) const noexcept
 {
     switch (kind) {
+    case app::RemoteServerKind::LocalRoot:
     case app::RemoteServerKind::Jellyfin:
     case app::RemoteServerKind::OpenSubsonic:
     case app::RemoteServerKind::Navidrome:

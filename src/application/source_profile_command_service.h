@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstddef>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -33,6 +34,11 @@ struct SourceProfileProbeResult {
     app::RemoteSourceSession session{};
 };
 
+struct LocalRootCommandResult {
+    CommandResult command{};
+    app::RemoteServerProfile profile{};
+};
+
 class SourceProfileCommandService {
 public:
     explicit SourceProfileCommandService(const app::RuntimeServices& services) noexcept;
@@ -50,6 +56,13 @@ public:
     [[nodiscard]] bool toggleSelfSigned(app::RemoteServerProfile& profile, std::vector<app::RemoteServerProfile>& profiles) const;
     [[nodiscard]] SourceProfileProbeResult probe(app::RemoteServerProfile& profile, std::size_t profile_count) const;
 
+    [[nodiscard]] std::vector<app::RemoteServerProfile> listLocalRoots() const;
+    [[nodiscard]] std::vector<std::filesystem::path> enabledLocalRoots() const;
+    [[nodiscard]] LocalRootCommandResult addLocalRoot(const std::filesystem::path& path, std::optional<std::string> name = std::nullopt) const;
+    [[nodiscard]] LocalRootCommandResult removeLocalRoot(std::string_view id_or_path) const;
+    [[nodiscard]] LocalRootCommandResult enableLocalRoot(std::string_view id_or_path) const;
+    [[nodiscard]] LocalRootCommandResult disableLocalRoot(std::string_view id_or_path) const;
+
     [[nodiscard]] std::string kindDisplayName(app::RemoteServerKind kind) const;
     [[nodiscard]] std::string defaultProfileId(app::RemoteServerKind kind, std::size_t index) const;
     [[nodiscard]] std::string defaultProfileName(app::RemoteServerKind kind) const;
@@ -61,6 +74,8 @@ public:
     [[nodiscard]] std::string usernameLabel(const app::RemoteServerProfile& profile) const;
     [[nodiscard]] std::string permissionLabel(app::RemoteServerKind kind) const;
     [[nodiscard]] bool keepsLocalFacts(app::RemoteServerKind kind) const;
+    [[nodiscard]] std::filesystem::path defaultLocalRoot() const;
+    [[nodiscard]] std::filesystem::path localRootPath(const app::RemoteServerProfile& profile) const;
 
 private:
     const app::RuntimeServices& services_;

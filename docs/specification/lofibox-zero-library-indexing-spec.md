@@ -42,9 +42,26 @@ This document does not define:
 
 The local library index may be built from indexable roots such as:
 
-- the default local media root, historically `/music`
+- the default local media root, `~/Music`
 - user-configured local filesystem roots
 - LAN or share-backed roots when they are configured as browsable file roots and are available for directory traversal
+
+`/music` is not the product default. It may remain only as an explicit configured root or as a compatibility fallback when no user home can be resolved.
+The scanner must not promote `/music` back into the product meaning of the default library.
+
+### 4.1.1 Default Local Media Root
+
+- The default local media root is `~/Music`.
+- The default root is materialized from the current user-home context by the source-profile domain, not by page code or target entry points.
+- The default root is used only when `SourceProfilesDomain` has no enabled local media root.
+- If the default cannot be resolved from a user home, an implementation may fall back to a compatibility root, but that fallback must be treated as compatibility behavior rather than the product default.
+
+### 4.1.2 Enabled Local Roots
+
+- Enabled local media roots are durable source profiles owned by `SourceProfilesDomain`.
+- The scanner must read enabled local media roots from `SourceProfilesDomain` through the application command/query boundary.
+- CLI-supplied scan paths are diagnostic or temporary roots. They must not become durable local media roots unless routed through source-profile mutation commands.
+- Target entry points such as X11 and device launchers must not define product root defaults directly.
 
 ### 4.2 Non-Indexable By Default
 
@@ -151,10 +168,14 @@ A full rebuild should be supported when:
 The indexing domain should react to triggers such as:
 
 - enabled media roots changed
-- source root removed or added
+- source root added, removed, enabled, or disabled
 - explicit full rebuild request
 - explicit incremental refresh request
 - invalid or stale persisted metadata index detected
+
+Adding, removing, enabling, or disabling a local media root marks the library index stale.
+A refresh or rebuild command must rescan the current enabled roots from `SourceProfilesDomain`.
+Startup must scan enabled roots consistently across the X11 and device targets.
 
 ## 11. Repair And Fallback Rules
 

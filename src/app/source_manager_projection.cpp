@@ -8,6 +8,7 @@ namespace {
 std::string kindLabel(RemoteServerKind kind)
 {
     switch (kind) {
+    case RemoteServerKind::LocalRoot: return "LOCAL";
     case RemoteServerKind::Jellyfin: return "JELLYFIN";
     case RemoteServerKind::OpenSubsonic: return "OPENSUBSONIC";
     case RemoteServerKind::Navidrome: return "NAVIDROME";
@@ -46,6 +47,12 @@ std::vector<std::pair<std::string, std::string>> buildSourceManagerRows(
         rows.emplace_back("ADD " + manifest.display_name, manifest.family);
     }
     for (const auto& profile : profiles) {
+        if (profile.kind == RemoteServerKind::LocalRoot) {
+            rows.emplace_back(
+                profile.name.empty() ? kindLabel(profile.kind) : profile.name,
+                profile.enabled ? "LOCAL ROOT" : "DISABLED");
+            continue;
+        }
         const bool has_endpoint = !profile.base_url.empty();
         const bool has_secret = !profile.password.empty() || !profile.api_token.empty();
         rows.emplace_back(

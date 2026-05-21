@@ -63,6 +63,12 @@ void LibraryController::startLoading() noexcept
     repository_.markLoading();
 }
 
+void LibraryController::markStale() noexcept
+{
+    repository_.markStale();
+    resetScanProgress(LibraryScanPhase::Idle, "library roots changed");
+}
+
 void LibraryController::resetScanProgress(LibraryScanPhase phase, std::string message)
 {
     scan_phase_.store(static_cast<int>(phase));

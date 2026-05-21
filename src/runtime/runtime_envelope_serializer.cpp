@@ -21,7 +21,7 @@ struct EnumName {
     std::string_view name;
 };
 
-constexpr std::array<EnumName<RuntimeCommandKind>, 30> kCommandNames{{
+constexpr std::array<EnumName<RuntimeCommandKind>, 31> kCommandNames{{
     {RuntimeCommandKind::PlaybackPlay, "PlaybackPlay"},
     {RuntimeCommandKind::PlaybackPause, "PlaybackPause"},
     {RuntimeCommandKind::PlaybackResume, "PlaybackResume"},
@@ -50,6 +50,7 @@ constexpr std::array<EnumName<RuntimeCommandKind>, 30> kCommandNames{{
     {RuntimeCommandKind::AudioEffectCycle, "AudioEffectCycle"},
     {RuntimeCommandKind::RemoteReconnect, "RemoteReconnect"},
     {RuntimeCommandKind::SettingsApplyLive, "SettingsApplyLive"},
+    {RuntimeCommandKind::LibraryRefresh, "LibraryRefresh"},
     {RuntimeCommandKind::RuntimeShutdown, "RuntimeShutdown"},
     {RuntimeCommandKind::RuntimeReload, "RuntimeReload"},
 }};

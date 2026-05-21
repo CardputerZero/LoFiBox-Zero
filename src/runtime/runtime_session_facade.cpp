@@ -402,6 +402,11 @@ bool RuntimeSessionFacade::jumpQueue(int queue_index)
     });
 }
 
+bool RuntimeSessionFacade::refreshLibrary()
+{
+    return services_.libraryMutations().beginAsyncRefreshConfiguredLibrary();
+}
+
 void RuntimeSessionFacade::tick(double delta_seconds)
 {
     playback_.update(delta_seconds);

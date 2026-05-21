@@ -283,6 +283,11 @@ lofibox source remove <profile-id>
 lofibox source probe <profile-id>
 lofibox source auth-status <profile-id>
 lofibox source capabilities <profile-id>
+lofibox source local-root list
+lofibox source local-root add <path> [--name <label>]
+lofibox source local-root remove <id-or-path>
+lofibox source local-root enable <id-or-path>
+lofibox source local-root disable <id-or-path>
 lofibox credentials list
 lofibox credentials show-ref <profile-id-or-ref>
 lofibox credentials status <profile-id-or-ref>
@@ -290,6 +295,11 @@ lofibox credentials set <profile-id-or-ref>
 lofibox credentials delete <profile-id-or-ref>
 lofibox credentials validate <profile-id-or-ref>
 lofibox library scan [path...]
+lofibox library root list
+lofibox library root add <path> [--name <label>]
+lofibox library root remove <id-or-path>
+lofibox library root enable <id-or-path>
+lofibox library root disable <id-or-path>
 lofibox library status
 lofibox library list tracks|albums|artists|genres|composers|compilations
 lofibox library query tracks|albums ...
@@ -306,6 +316,16 @@ lofibox cache gc
 
 Direct commands that write profiles, credentials, or cache state must return
 `7` on persistence failure.
+
+`lofibox source local-root ...` is the durable command surface for local media
+root profiles in `SourceProfilesDomain`.
+`lofibox library root ...` commands are library-facing aliases over those same
+source-profile local-root profiles; they must not write a separate library-root
+store.
+`lofibox library scan [path...]` remains a temporary diagnostic scan. Paths
+provided to `library scan` or `--root` do not become durable roots.
+Library commands with no temporary root must read the current enabled local
+roots from `SourceProfilesDomain`.
 
 Credential commands must accept stdin forms for secrets:
 
@@ -337,6 +357,7 @@ lofibox runtime remote
 lofibox runtime settings
 lofibox runtime reload
 lofibox runtime shutdown
+lofibox runtime library-refresh
 lofibox play
 lofibox play --id <track-id>
 lofibox play --pause
