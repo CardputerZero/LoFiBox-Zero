@@ -118,6 +118,7 @@ On Linux, LoFiBox uses:
 - state: `$XDG_STATE_HOME/lofibox` or `~/.local/state/lofibox`
 - runtime: `$XDG_RUNTIME_DIR/lofibox` or a temporary fallback for ephemeral locks
 
+If `HOME` is unset on Linux, the platform boundary may resolve `~` from the effective user's account record before using any temporary or compatibility fallback.
 The cache store, runtime logger, script bridge payloads, and single-instance lock must use this path boundary.
 Installed paths such as `/usr/share/lofibox` and `/usr/lib/lofibox` are read-only runtime resource locations and must not receive user data, cache files, logs, or state.
 

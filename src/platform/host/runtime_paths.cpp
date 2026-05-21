@@ -30,6 +30,10 @@ fs::path knownEnvPath(const char* name)
     return {};
 }
 #else
+#include <pwd.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 fs::path envPath(const char* name)
 {
     if (const char* value = std::getenv(name); value != nullptr && *value != '\0') {
@@ -40,7 +44,14 @@ fs::path envPath(const char* name)
 
 fs::path homeDir()
 {
-    return envPath("HOME");
+    if (auto home = envPath("HOME"); !home.empty()) {
+        return home;
+    }
+    const auto* entry = getpwuid(geteuid());
+    if (entry == nullptr || entry->pw_dir == nullptr || *entry->pw_dir == '\0') {
+        return {};
+    }
+    return fs::path{entry->pw_dir};
 }
 #endif
 

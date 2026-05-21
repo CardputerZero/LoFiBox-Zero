@@ -209,4 +209,5 @@ Installed package paths are not writable application state. Runtime data must fo
 - state: `$XDG_STATE_HOME/lofibox` or `~/.local/state/lofibox`
 - runtime: `$XDG_RUNTIME_DIR/lofibox` for ephemeral locks where available
 
+On Linux, package/runtime launches may have a sparse environment. If `HOME` is unset, LoFiBox should resolve `~` from the effective user's account record before using a temporary fallback, so APPLaunch and service-style starts share the same user state as shell commands for that user.
 Package tests must not rely on the user's real `HOME`, real music library, real audio device, or external network.

@@ -121,6 +121,7 @@ Runtime data must follow:
 - cache: `~/.cache/lofibox/`
 - state: `~/.local/state/lofibox/`
 
+If `HOME` is unset on Linux, the runtime path boundary may resolve `~` from the effective user's account record before falling back to temporary storage.
 User data must never be written into `/usr`, `/opt`, installation directories, or the current working directory.
 
 ## 9. Current Implementation Convergence

@@ -227,3 +227,12 @@ This update records implementation convergence for durable local media roots:
 - Local-root profiles are filtered out of remote browse/search behavior while still round-tripping through profile persistence.
 - Windows/MSVC builds now compile sources as UTF-8 with `/utf-8`, which is required by existing TUI Unicode source files.
 - Smoke coverage now includes default `~/Music` projection, configured-root library refresh, local-root direct CLI add/list/enable/disable/remove, XDG local-root persistence without credentials, runtime library refresh, and TUI/runtime projection checks.
+
+## 2026-05-21 Local Media Root Startup Environment Fix (0.2.3)
+
+This update records the post-0.2.2 fix for device/APPLaunch starts where the process environment may not include a login-shell `HOME`:
+
+- Linux runtime paths now resolve `~` from the effective user's account record when `HOME` is unset, so root-owned APPLaunch/device starts still read `/root/.local/share/lofibox` instead of a temporary profile store.
+- `SourceProfileCommandService` uses the same effective-user home fallback for the default local media root, keeping the product default as `~/Music` before any `/music` compatibility fallback.
+- Direct CLI local-root add/remove/enable/disable commands now best-effort request runtime `LibraryRefresh`, letting a running GUI reload durable enabled roots immediately after the durable source-profile mutation.
+- Smoke coverage now includes effective-user home fallback when `HOME` is unset and GUI startup from persisted local-root profiles with no explicit diagnostic roots.

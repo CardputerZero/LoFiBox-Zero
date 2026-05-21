@@ -53,6 +53,7 @@ The scanner must not promote `/music` back into the product meaning of the defau
 
 - The default local media root is `~/Music`.
 - The default root is materialized from the current user-home context by the source-profile domain, not by page code or target entry points.
+- On Linux, if `HOME` is unset, the current user-home context may be resolved from the effective user's account record before any compatibility fallback is considered.
 - The default root is used only when `SourceProfilesDomain` has no enabled local media root.
 - If the default cannot be resolved from a user home, an implementation may fall back to a compatibility root, but that fallback must be treated as compatibility behavior rather than the product default.
 

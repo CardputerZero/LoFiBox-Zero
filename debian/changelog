@@ -1,3 +1,14 @@
+lofibox (0.2.3-1) UNRELEASED; urgency=medium
+
+  * New upstream release 0.2.3.
+  * Resolve Linux runtime paths and the default local media root from the
+    effective user's account home when HOME is unset, keeping APPLaunch and
+    service-style starts aligned with shell commands for the same user.
+  * Best-effort refresh a running instance after direct CLI local-root
+    add/remove/enable/disable commands.
+
+ -- LoFiBox contributors <maintainers@example.invalid>  Thu, 21 May 2026 18:30:00 +0800
+
 lofibox (0.2.2-1) UNRELEASED; urgency=medium
 
   * New upstream release 0.2.2.

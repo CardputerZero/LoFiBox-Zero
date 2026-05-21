@@ -5,8 +5,17 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
+#if !defined(_WIN32)
+#include <pwd.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
+#include "app/lofibox_app.h"
 #include "app/remote_profile_store.h"
 #include "app/runtime_services.h"
 #include "application/app_service_host.h"
@@ -58,6 +67,44 @@ void setHome(const std::filesystem::path& home)
 #endif
 }
 
+#if !defined(_WIN32)
+class EnvVarGuard {
+public:
+    explicit EnvVarGuard(const char* name)
+        : name_(name)
+    {
+        if (const char* value = std::getenv(name_); value != nullptr) {
+            value_ = std::string{value};
+        }
+    }
+
+    ~EnvVarGuard()
+    {
+        if (value_) {
+            setenv(name_, value_->c_str(), 1);
+            return;
+        }
+        unsetenv(name_);
+    }
+
+    EnvVarGuard(const EnvVarGuard&) = delete;
+    EnvVarGuard& operator=(const EnvVarGuard&) = delete;
+
+private:
+    const char* name_{};
+    std::optional<std::string> value_{};
+};
+
+std::filesystem::path accountHomeDir()
+{
+    const auto* entry = getpwuid(geteuid());
+    if (entry == nullptr || entry->pw_dir == nullptr || *entry->pw_dir == '\0') {
+        return {};
+    }
+    return entry->pw_dir;
+}
+#endif
+
 std::filesystem::path normalized(const std::filesystem::path& path)
 {
     std::error_code ec{};
@@ -103,6 +150,16 @@ int main()
     assert(visible_roots.front().enabled);
     assert(normalized(visible_roots.front().local_root) == normalized(default_music));
 
+#if !defined(_WIN32)
+    {
+        EnvVarGuard home_guard{"HOME"};
+        unsetenv("HOME");
+        const auto account_home = accountHomeDir();
+        assert(!account_home.empty());
+        assert(normalized(source_profiles.defaultLocalRoot()) == normalized(account_home / "Music"));
+    }
+#endif
+
     lofibox::application::AppServiceHost app_host{services};
     assert(app_host.registry().libraryMutations().refreshConfiguredLibrary());
     assert(app_host.registry().libraryQueries().model().tracks.size() == 1U);
@@ -117,6 +174,19 @@ int main()
     const auto configured_roots = source_profiles.enabledLocalRoots();
     assert(configured_roots.size() == 1U);
     assert(normalized(configured_roots.front()) == normalized(alt_music));
+
+    {
+        lofibox::app::LoFiBoxApp app{{}, {}, services};
+        for (int tick = 0; tick < 500; ++tick) {
+            app.update();
+            if (app.snapshot().library_ready) {
+                break;
+            }
+        }
+        const auto snapshot = app.snapshot();
+        assert(snapshot.library_ready);
+        assert(snapshot.track_count == 1U);
+    }
 
     const auto disabled = source_profiles.disableLocalRoot(added.profile.id);
     assert(disabled.command.accepted);

@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.2.2 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.3 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -503,7 +503,7 @@ if(BUILD_TESTING)
     add_test(NAME lofibox_runtime_host_smoke COMMAND lofibox_runtime_host_smoke)
 
     add_executable(lofibox_runtime_transport_socket_smoke tests/runtime_transport_socket_smoke.cpp)
-    target_link_libraries(lofibox_runtime_transport_socket_smoke PRIVATE lofibox_zero_core)
+    target_link_libraries(lofibox_runtime_transport_socket_smoke PRIVATE lofibox_zero_core lofibox_zero_target_cli)
     add_test(NAME lofibox_runtime_transport_socket_smoke COMMAND lofibox_runtime_transport_socket_smoke)
 
     add_executable(lofibox_runtime_event_stream_smoke tests/runtime_event_stream_smoke.cpp)

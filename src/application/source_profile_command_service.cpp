@@ -11,6 +11,12 @@
 #include <string>
 #include <utility>
 
+#if !defined(_WIN32)
+#include <pwd.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 #include "app/remote_profile_store.h"
 #include "remote/common/remote_provider_contract.h"
 #include "remote/common/remote_source_registry.h"
@@ -34,6 +40,11 @@ std::filesystem::path homeDir()
 #if defined(_WIN32)
     if (auto home = envValue("USERPROFILE"); !home.empty()) {
         return home;
+    }
+#else
+    const auto* entry = getpwuid(geteuid());
+    if (entry != nullptr && entry->pw_dir != nullptr && *entry->pw_dir != '\0') {
+        return entry->pw_dir;
     }
 #endif
     return {};

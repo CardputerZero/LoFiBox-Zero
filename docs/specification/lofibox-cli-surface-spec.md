@@ -322,6 +322,10 @@ root profiles in `SourceProfilesDomain`.
 `lofibox library root ...` commands are library-facing aliases over those same
 source-profile local-root profiles; they must not write a separate library-root
 store.
+After a successful add/remove/enable/disable mutation, direct local-root
+commands may request `RuntimeCommandKind::LibraryRefresh` from a running
+instance so the GUI/TUI reloads durable enabled roots immediately. That runtime
+request must be best-effort and must not own or replace the durable mutation.
 `lofibox library scan [path...]` remains a temporary diagnostic scan. Paths
 provided to `library scan` or `--root` do not become durable roots.
 Library commands with no temporary root must read the current enabled local

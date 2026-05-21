@@ -135,6 +135,7 @@ Any future visual or input validation must go through a real Linux product targe
   - data: `~/.local/share/lofibox/`
   - cache: `~/.cache/lofibox/`
   - state: `~/.local/state/lofibox/`
+- On Linux, if `HOME` is unset, the platform runtime path boundary may resolve `~` from the effective user's account record before falling back to temporary storage.
 - Shared app code must not own process singleton behavior; single-instance enforcement belongs in host startup code and must guard the Linux executable target.
 - Linux executable targets must be thin target bindings over shared product code.
 - Device-profile targets must be compatible with framebuffer-oriented deployment when that profile is active.

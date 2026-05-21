@@ -24,6 +24,8 @@
 #include "application/source_profile_command_service.h"
 #include "cli/cli_format.h"
 #include "remote/common/remote_catalog_model.h"
+#include "runtime/runtime_command.h"
+#include "runtime/unix_socket_runtime_transport.h"
 
 namespace lofibox::cli {
 namespace {
@@ -356,7 +358,7 @@ std::optional<app::RemoteCatalogNode> rootNodeForPath(std::string_view path)
 void printDirectHelp(std::ostream& out)
 {
     out << "Direct LoFiBox commands:\n"
-        << "  Global: [--json] [--porcelain] [--fields a,b] [--quiet]\n"
+        << "  Global: [--json] [--porcelain] [--fields a,b] [--quiet] [--runtime-socket <path>]\n"
         << "  lofibox source list\n"
         << "  lofibox source show <profile-id>\n"
         << "  lofibox source add <kind> --id <id> --name <label> --base-url <url> [--username <user>] [--credential-ref <ref>]\n"
@@ -397,6 +399,23 @@ void printDirectHelp(std::ostream& out)
         << "  lofibox cache purge|clear\n"
         << "  lofibox cache gc\n"
         << "  lofibox doctor\n";
+}
+
+void requestRunningLibraryRefresh(const ParsedArgs& args) noexcept
+{
+    try {
+        std::filesystem::path socket_path{};
+        if (const auto socket = optionValue(args, "runtime-socket")) {
+            socket_path = *socket;
+        }
+        ::lofibox::runtime::UnixSocketRuntimeCommandClient client{std::move(socket_path)};
+        (void)client.dispatch(::lofibox::runtime::RuntimeCommand{
+            ::lofibox::runtime::RuntimeCommandKind::LibraryRefresh,
+            {},
+            ::lofibox::runtime::CommandOrigin::RuntimeCli,
+            "direct-cli:local-root-refresh"});
+    } catch (...) {
+    }
 }
 
 void applyProfileOptions(
@@ -795,6 +814,7 @@ int runLocalRootCommand(
             return directError(args, err, CliExitCode::Persistence, result.command.summary, result.command.code);
         }
         registry.libraryMutations().markConfiguredLibraryStale();
+        requestRunningLibraryRefresh(args);
         auto fields = profileFields(result.profile, registry.sourceProfiles());
         fields.insert(fields.begin(), {"status", "ADDED"});
         printObject(out, format, fields);
@@ -823,6 +843,7 @@ int runLocalRootCommand(
                 result.command.code);
         }
         registry.libraryMutations().markConfiguredLibraryStale();
+        requestRunningLibraryRefresh(args);
         auto fields = profileFields(result.profile, registry.sourceProfiles());
         fields.insert(fields.begin(), {"status", result.command.summary});
         printObject(out, format, fields);

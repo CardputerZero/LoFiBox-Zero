@@ -16,7 +16,7 @@ The project version is defined in exactly one place:
 
 ```cmake
 # CMakeLists.txt line 5
-project(LoFiBoxZero VERSION 0.2.2 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.3 LANGUAGES C CXX)
 ```
 
 `PROJECT_VERSION` is the authoritative version string. CMake also decomposes it into `PROJECT_VERSION_MAJOR`, `PROJECT_VERSION_MINOR`, and `PROJECT_VERSION_PATCH`, though current consumers all use the full string.
@@ -101,14 +101,14 @@ Every location that displays or transmits the software version must derive it fr
 
 | Consumer | File | Propagation | Display Format |
 |----------|------|-------------|----------------|
-| CLI `--version` | `src/targets/cli_options.cpp` | Preprocessor | `lofibox 0.2.2` |
-| CLI `--version --json` | `src/targets/cli_options.cpp` | Preprocessor | `{"name":"lofibox","version":"0.2.2"}` |
-| CLI `--help` banner | `src/targets/cli_options.cpp` | Preprocessor | `LoFiBox 0.2.2` |
+| CLI `--version` | `src/targets/cli_options.cpp` | Preprocessor | `lofibox 0.2.3` |
+| CLI `--version --json` | `src/targets/cli_options.cpp` | Preprocessor | `{"name":"lofibox","version":"0.2.3"}` |
+| CLI `--help` banner | `src/targets/cli_options.cpp` | Preprocessor | `LoFiBox 0.2.3` |
 | GUI About page | `src/app/app_projection_builder.cpp` | Preprocessor | Rendered in 320×170 canvas |
 | WebUI snapshot DTO | `src/webui/webui_projection.cpp` | Inherited via lofibox_zero_core | Not yet displayed in frontend; available in JSON |
-| Jellyfin Auth header | `src/remote/jellyfin/jellyfin_provider.py` | configure_file() | `Version="0.2.2"` in `MediaBrowser` auth |
-| Debian package | `debian/changelog` | Manual (see Section 7) | `lofibox (0.2.2-1)` |
-| AppStream metadata | `data/io.github.vicliu624.lofibox.metainfo.xml` | Manual (see Section 7) | `<release version="0.2.2" .../>` |
+| Jellyfin Auth header | `src/remote/jellyfin/jellyfin_provider.py` | configure_file() | `Version="0.2.3"` in `MediaBrowser` auth |
+| Debian package | `debian/changelog` | Manual (see Section 7) | `lofibox (0.2.3-1)` |
+| AppStream metadata | `data/io.github.vicliu624.lofibox.metainfo.xml` | Manual (see Section 7) | `<release version="0.2.3" .../>` |
 | Debian watch | `debian/watch` | Tag pattern match | No version literal needed |
 
 Any new consumer added to the project must be added to this registry.
@@ -119,7 +119,7 @@ Two distinct version concepts co-exist in the codebase and must not be confused:
 
 | Concept | Type | Source | Semantics | Consumer Scope |
 |---------|------|--------|-----------|----------------|
-| **App version** | String (`"0.2.2"`) | `CMakeLists.txt` `PROJECT_VERSION` | Software release identity | CLI, GUI About, Jellyfin UA, Debian package, AppStream metadata |
+| **App version** | String (`"0.2.3"`) | `CMakeLists.txt` `PROJECT_VERSION` | Software release identity | CLI, GUI About, Jellyfin UA, Debian package, AppStream metadata |
 | **Snapshot version** | Unsigned integer (`42`, `43`, …) | `RuntimeSnapshot::version` | Monotonic counter incremented on every runtime state mutation; used for cache invalidation and event diffing | Runtime event stream, WebUI event tracking, snapshot comparison |
 
 The snapshot `version` field in WebUI JSON responses (e.g., `"version": 42` at the top level of `GET /api/runtime/snapshot`) is the runtime state counter, **not** the app release version. The WebUI frontend stores this as `state.version` for internal event-stream tracking. It must never be displayed to users as if it were the software version.
@@ -170,12 +170,12 @@ After a version bump, CI must verify:
 
 ### 8.1 Upstream vs. Debian Version
 
-The version in `CMakeLists.txt` is the **upstream version**. When packaged for Debian, the Debian maintainer appends the **Debian revision** (e.g., `0.2.2-1`) in `debian/changelog` only.
+The version in `CMakeLists.txt` is the **upstream version**. When packaged for Debian, the Debian maintainer appends the **Debian revision** (e.g., `0.2.3-1`) in `debian/changelog` only.
 
 The upstream source must report the unadorned version string:
-- `lofibox --version` → `lofibox 0.2.2` (not `lofibox 0.2.2-1`)
-- GUI About page → `0.2.2` (not `0.2.2-1`)
-- Jellyfin User-Agent → `Version="0.2.2"` (not `Version="0.2.2-1"`)
+- `lofibox --version` → `lofibox 0.2.3` (not `lofibox 0.2.3-1`)
+- GUI About page → `0.2.3` (not `0.2.3-1`)
+- Jellyfin User-Agent → `Version="0.2.3"` (not `Version="0.2.3-1"`)
 
 Any Debian-specific packaging version information belongs in the package metadata, not in the upstream source.
 
@@ -189,7 +189,7 @@ opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/lofibox-$1\.tar\.gz/ \
   https://github.com/vicliu624/LoFiBox-Zero/tags .*/v?(\d\S*)\.tar\.gz
 ```
 
-The tag name on the upstream repository (e.g., `v0.2.2`) must match the `CMakeLists.txt` version. A version bump must include a corresponding Git tag.
+The tag name on the upstream repository (e.g., `v0.2.3`) must match the `CMakeLists.txt` version. A version bump must include a corresponding Git tag.
 
 The source release workflow is the owner of tag creation. It must validate that
 `CMakeLists.txt`, `debian/changelog`, `CHANGELOG.md`, and AppStream metadata all
@@ -221,7 +221,7 @@ Both version propagation mechanisms satisfy Debian's reproducible builds require
 
 The following patterns are forbidden and must be caught in code review:
 
-- **Hardcoded version literals**: Any source file (C++, Python, shell, CMake helper) containing a literal version string such as `"0.2.2"` or `"0.1.0"`. The grep pattern `"0\.[0-9]+\.[0-9]+"` should return zero results in `src/` at all times.
+- **Hardcoded version literals**: Any source file (C++, Python, shell, CMake helper) containing a literal version string such as `"0.2.3"` or `"0.1.0"`. The grep pattern `"0\.[0-9]+\.[0-9]+"` should return zero results in `src/` at all times.
 - **Duplicate version definitions**: A second `project(VERSION …)` call, a hand-maintained `VERSION` file, a `version.txt`, or any alternative source of truth.
 - **Build-time version detection**: `git describe`, `git rev-parse`, or any VCS-based version extraction in build scripts. The version must come from `CMakeLists.txt`, not from Git history.
 - **Version in file names without automation**: If a file name must include the version (e.g., a tarball, `.deb`, or `.changes`), it must be generated from `PROJECT_VERSION` or from `debian/changelog` when the Debian revision is part of the file name, rather than hand-typed.
