@@ -745,6 +745,13 @@ private:
         while (!stop_requested_) {
             const int read_bytes = readPipeProcess(decoder_process_, buffer.data(), static_cast<int>(buffer.size()));
             if (read_bytes < 0) {
+                if (!pipeProcessRunning(decoder_process_)) {
+                    break;
+                }
+                if (!inputProcessRunning(sink_process_)) {
+                    markFailed("Realtime PCM sink exited while decoder output was pending");
+                    break;
+                }
                 std::this_thread::sleep_for(std::chrono::milliseconds{5});
                 continue;
             }

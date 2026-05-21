@@ -1,3 +1,13 @@
+lofibox (0.2.6-1) UNRELEASED; urgency=medium
+
+  * New upstream release 0.2.6.
+  * Observe Linux PCM decoder/sink child-process exit while pipe reads are
+    pending, and pause instead of queue-advancing when a reliable backend
+    finish position remains materially before the known duration.
+  * Verify default Linux WebUI smoke coverage in CI.
+
+ -- LoFiBox contributors <maintainers@example.invalid>  Fri, 22 May 2026 02:55:00 +0800
+
 lofibox (0.2.5-1) UNRELEASED; urgency=medium
 
   * New upstream release 0.2.5.

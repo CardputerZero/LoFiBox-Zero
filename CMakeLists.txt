@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.2.5 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.6 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")

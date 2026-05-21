@@ -99,6 +99,7 @@ int readPipeProcess(RunningPipeProcess& process, char* buffer, int max_bytes);
 void stopPipeProcess(RunningPipeProcess& process);
 void pausePipeProcess(RunningPipeProcess& process);
 void resumePipeProcess(RunningPipeProcess& process);
+bool pipeProcessRunning(RunningPipeProcess& process);
 #if defined(__linux__)
 bool spawnInputProcess(RunningInputProcess& process, const fs::path& executable, const std::vector<std::string>& args);
 int writeInputProcess(RunningInputProcess& process, const char* buffer, int max_bytes);

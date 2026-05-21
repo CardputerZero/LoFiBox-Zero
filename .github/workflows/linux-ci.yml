@@ -54,6 +54,11 @@ jobs:
       - name: Build Shared Linux Tests
         run: cmake --build --preset linux-test-debug-build
 
+      - name: Verify Default Linux WebUI Test Coverage
+        run: |
+          ctest --test-dir build/test -N | tee /tmp/lofibox-linux-tests.txt
+          grep -F "lofibox_webui_smoke" /tmp/lofibox-linux-tests.txt
+
       - name: Run Shared Linux Tests
         run: ctest --preset linux-debug-test
 

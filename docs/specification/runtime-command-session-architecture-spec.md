@@ -324,7 +324,12 @@ Required guardrails:
   playback position is still materially before the known duration, runtime
   ticking must keep the current item active and must not advance the queue. A
   completion may advance only when the projected position is within the
-  accepted remaining-duration threshold, or when no reliable duration is known.
+  accepted remaining-duration threshold or when no reliable duration is known.
+  If a backend finish includes a reliable playback position that remains
+  materially before the known duration, runtime must treat that as an adapter
+  or decode-path end, pause the current item, and not advance the queue. The
+  backend must still observe decoder/sink child-process exit promptly so such
+  cases do not strand runtime in `PLAYING`.
 - Presentation targets may display honest fallback states, but those fallback
   states must not feed back into runtime truth.
 

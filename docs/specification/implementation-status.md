@@ -237,6 +237,13 @@ This update records the post-0.2.2 fix for device/APPLaunch starts where the pro
 - Direct CLI local-root add/remove/enable/disable commands now best-effort request runtime `LibraryRefresh`, letting a running GUI reload durable enabled roots immediately after the durable source-profile mutation.
 - Smoke coverage now includes effective-user home fallback when `HOME` is unset and GUI startup from persisted local-root profiles with no explicit diagnostic roots.
 
+## 2026-05-22 Early PCM Child Exit Completion Fix (0.2.6)
+
+This update records the post-0.2.5 Linux PCM child-exit and early backend-position finish fix for the 0.2.6 patch line:
+
+- Linux PCM worker exit is now observed while pipe reads are pending, so a decoder or sink process that exits early cannot leave runtime stranded in `PLAYING`.
+- When a backend finish reports a reliable position still materially before the known duration, runtime pauses the current track rather than treating that adapter event as normal queue completion.
+
 ## 2026-05-21 Playback Completion And Switch Latency Fix (0.2.5)
 
 This update records the post-0.2.4 playback completion and local Linux switch-latency fix for the 0.2.5 patch line:

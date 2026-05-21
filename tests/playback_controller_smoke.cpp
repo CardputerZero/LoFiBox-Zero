@@ -608,6 +608,32 @@ int main()
         std::cerr << "Expected early Finished with a backend position far from duration not to auto-advance.\n";
         return 1;
     }
+    position_playback.update(0.5, library);
+    if (!position_playback.session().current_track_id || *position_playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected early Finished with backend position far from duration to wait for a short confirmation window.\n";
+        return 1;
+    }
+    for (int tick = 0; tick < 4; ++tick) {
+        position_playback.update(0.25, library);
+    }
+    if (!position_playback.session().current_track_id
+        || *position_playback.session().current_track_id != ids.front()
+        || position_playback.session().status != lofibox::app::PlaybackStatus::Paused
+        || position_playback.session().audio_active) {
+        std::cerr << "Expected early backend-position finish to pause the current track instead of auto-advancing.\n";
+        return 1;
+    }
+
+    if (!position_playback.startTrack(library, ids.front())) {
+        std::cerr << "Expected position-reporting backend test to restart after early backend-position rejection.\n";
+        return 1;
+    }
+    if (auto* track = library.findMutableTrack(ids.front())) {
+        track->duration_seconds = 20;
+    }
+    position_backend->position_seconds = 13.0;
+    position_playback.update(0.1, library);
+    position_backend->state_value = lofibox::app::AudioPlaybackState::Finished;
     position_backend->position_seconds = 18.49;
     position_playback.update(0.1, library);
     if (!position_playback.session().current_track_id || *position_playback.session().current_track_id != ids.front()) {

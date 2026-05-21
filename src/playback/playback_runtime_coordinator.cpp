@@ -11,6 +11,13 @@ namespace lofibox::app {
 namespace {
 
 constexpr double kAcceptFinishRemainingSeconds = 1.5;
+constexpr double kEarlyPositionFinishConfirmationSeconds = 1.0;
+
+enum class FinishGateDecision {
+    Accept,
+    Defer,
+    RejectEarlyPosition,
+};
 
 void resetFinishPending(PlaybackSession& session) noexcept
 {
@@ -18,14 +25,14 @@ void resetFinishPending(PlaybackSession& session) noexcept
     session.finish_pending_seconds = 0.0;
 }
 
-bool deferEarlyFinish(
+FinishGateDecision gateFinishedBackend(
     PlaybackSession& session,
     int duration_seconds,
     double delta_seconds,
     std::optional<double> backend_position_seconds) noexcept
 {
     if (duration_seconds <= 0) {
-        return false;
+        return FinishGateDecision::Accept;
     }
 
     const double duration = static_cast<double>(duration_seconds);
@@ -37,18 +44,22 @@ bool deferEarlyFinish(
 
     if (duration - observed_elapsed <= kAcceptFinishRemainingSeconds) {
         session.elapsed_seconds = observed_elapsed;
-        return false;
+        return FinishGateDecision::Accept;
     }
 
     session.finish_pending = true;
-    session.finish_pending_seconds += std::max(0.0, delta_seconds);
+    session.finish_pending_seconds += std::min(std::max(0.0, delta_seconds), 0.25);
     if (backend_position_seconds && std::isfinite(*backend_position_seconds)) {
         session.elapsed_seconds = observed_elapsed;
+        session.visualization_frame = {};
+        return session.finish_pending_seconds >= kEarlyPositionFinishConfirmationSeconds
+            ? FinishGateDecision::RejectEarlyPosition
+            : FinishGateDecision::Defer;
     } else if (session.status == PlaybackStatus::Playing) {
         session.elapsed_seconds = std::min(duration, observed_elapsed + std::max(0.0, delta_seconds));
     }
     session.visualization_frame = {};
-    return true;
+    return FinishGateDecision::Defer;
 }
 
 } // namespace
@@ -180,10 +191,19 @@ void PlaybackRuntimeCoordinator::tick(
     const auto backend_position = session.audio_active ? audio_pipeline_.positionSeconds() : std::optional<double>{};
 
     if (session.audio_active && backend_state == AudioPlaybackState::Finished) {
-        if (deferEarlyFinish(session, duration_seconds, delta_seconds, backend_position)) {
+        const auto finish_decision = gateFinishedBackend(session, duration_seconds, delta_seconds, backend_position);
+        if (finish_decision == FinishGateDecision::Defer) {
             return;
         }
         resetFinishPending(session);
+        if (finish_decision == FinishGateDecision::RejectEarlyPosition) {
+            audio_pipeline_.stop();
+            session.audio_active = false;
+            session.status = PlaybackStatus::Paused;
+            session.visualization_pending = false;
+            session.visualization_frame = {};
+            return;
+        }
         if (advanceAfterFinish(queue, session, play_index)) {
             return;
         }

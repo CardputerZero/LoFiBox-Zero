@@ -21,6 +21,11 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.6" date="2026-05-22">
+      <description>
+        <p>Fixes Linux PCM decoder and sink child-process exit handling so early adapter or decode-path ends pause the current track instead of being interpreted as normal queue completion, and verifies default Linux WebUI smoke coverage in CI.</p>
+      </description>
+    </release>
     <release version="0.2.5" date="2026-05-21">
       <description>
         <p>Fixes premature queue advance by using playback position semantics, realtime-throttles local Linux PCM decoding, reduces local Linux track-switch latency, builds WebUI by default on Linux, and shows the WebUI address in Settings while network status is online.</p>

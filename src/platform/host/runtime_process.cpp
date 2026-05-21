@@ -773,6 +773,25 @@ void resumePipeProcess(RunningPipeProcess& process)
     kill(process.pid, SIGCONT);
 }
 
+bool pipeProcessRunning(RunningPipeProcess& process)
+{
+    if (!process.active || process.pid <= 0) {
+        return false;
+    }
+    int status = 0;
+    const pid_t result = waitpid(process.pid, &status, WNOHANG);
+    if (result == 0) {
+        return true;
+    }
+    process.pid = -1;
+    process.active = false;
+    if (process.read_fd >= 0) {
+        close(process.read_fd);
+        process.read_fd = -1;
+    }
+    return false;
+}
+
 bool spawnInputProcess(RunningInputProcess& process, const fs::path& executable, const std::vector<std::string>& args)
 {
     int pipe_fds[2]{-1, -1};
