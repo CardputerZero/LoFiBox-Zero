@@ -95,7 +95,7 @@ Supported contexts:
   - `PGUP` / `PGDN`: move by one page
   - `BACKSPACE`: return to parent page
   - `T`: sort
-  - `F2` through `F8`: global playback controls
+  - `F2` through `F6`: global playback controls
   - `F9`: search
 - The modal `MUST NOT` show the active sort mode as extra explanatory text; users should perceive sorting from the list order itself.
 - `BACKSPACE` `MUST` close the modal before navigating away.

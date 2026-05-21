@@ -102,14 +102,6 @@ constexpr std::uint32_t kEvdevKeycodeOffset = 8U;
 [[nodiscard]] std::optional<app::InputEvent> translateSpecialKey(std::uint32_t keycode)
 {
     switch (keycode) {
-    case KEY_Z:
-        return app::InputEvent{app::InputKey::Left, "LEFT", '\0'};
-    case KEY_X:
-        return app::InputEvent{app::InputKey::Down, "DOWN", '\0'};
-    case KEY_C:
-        return app::InputEvent{app::InputKey::Right, "RIGHT", '\0'};
-    case KEY_S:
-        return app::InputEvent{app::InputKey::Up, "UP", '\0'};
     case KEY_BACKSPACE:
         return app::InputEvent{app::InputKey::Backspace, "BACK", '\0'};
     case KEY_DELETE:
@@ -246,6 +238,11 @@ void updateXkbState(struct xkb_state* state, std::uint32_t keycode, int value) n
 }
 
 } // namespace
+
+std::optional<app::InputEvent> translateLinuxEvdevCommandKey(std::uint32_t keycode)
+{
+    return translateSpecialKey(keycode);
+}
 
 struct LinuxEvdevKeyboard::Impl {
     explicit Impl(std::string device_path_in, std::string xkb_layout_in)

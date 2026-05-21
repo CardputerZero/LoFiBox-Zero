@@ -105,12 +105,8 @@ Additional visual lock:
   - effect: jump to previous queued track without leaving Main Menu
 - `EVT_MENU_NEXT`
   - effect: jump to next queued track without leaving Main Menu
-- `EVT_MENU_SHUFFLE`
-  - effect: toggle shuffle without leaving Main Menu
-- `EVT_MENU_REPEAT_ALL`
-  - effect: toggle repeat-all loop without leaving Main Menu
-- `EVT_MENU_REPEAT_ONE`
-  - effect: toggle repeat-one loop without leaving Main Menu
+- `EVT_MENU_PLAY_MODE`
+  - effect: cycle playback mode without leaving Main Menu
 
 ## 8. Transition Contract
 
@@ -128,9 +124,7 @@ Additional visual lock:
 - `STATE_MAIN_MENU_READY + EVT_MENU_PAUSE` -> effect: pause music in place -> `STATE_MAIN_MENU_READY`
 - `STATE_MAIN_MENU_READY + EVT_MENU_PREVIOUS` -> effect: previous track in place -> `STATE_MAIN_MENU_READY`
 - `STATE_MAIN_MENU_READY + EVT_MENU_NEXT` -> effect: next track in place -> `STATE_MAIN_MENU_READY`
-- `STATE_MAIN_MENU_READY + EVT_MENU_SHUFFLE` -> effect: toggle shuffle in place -> `STATE_MAIN_MENU_READY`
-- `STATE_MAIN_MENU_READY + EVT_MENU_REPEAT_ALL` -> effect: toggle repeat-all in place -> `STATE_MAIN_MENU_READY`
-- `STATE_MAIN_MENU_READY + EVT_MENU_REPEAT_ONE` -> effect: toggle repeat-one in place -> `STATE_MAIN_MENU_READY`
+- `STATE_MAIN_MENU_READY + EVT_MENU_PLAY_MODE` -> effect: cycle playback mode in place -> `STATE_MAIN_MENU_READY`
 
 ## 8.1 Shortcut Help Modal
 
@@ -141,9 +135,7 @@ Additional visual lock:
   - `F3`: pause
   - `F4`: previous track
   - `F5`: next track
-  - `F6`: shuffle
-  - `F7`: repeat all
-  - `F8`: repeat one
+  - `F6`: play mode
   - `F9`: search
   - `F10`: library
   - `F11`: queue

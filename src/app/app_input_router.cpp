@@ -55,14 +55,11 @@ namespace {
         target.stepTrack(1);
         return true;
     case InputKey::F6:
-        target.toggleShuffle();
+        target.cycleMainMenuPlaybackMode();
         return true;
     case InputKey::F7:
-        target.toggleRepeatAll();
-        return true;
     case InputKey::F8:
-        target.toggleRepeatOne();
-        return true;
+        return false;
     case InputKey::F9:
         target.openSearchPage();
         return true;
@@ -138,10 +135,8 @@ void routeInput(AppInputTarget& target, const InputEvent& event)
             target.stepTrack(-1);
         } else if (action == UserAction::Right || action == UserAction::NextTrack) {
             target.stepTrack(1);
-        } else if (action == UserAction::Up) {
-            target.toggleShuffle();
-        } else if (action == UserAction::Down) {
-            target.cycleRepeatMode();
+        } else if (action == UserAction::Up || action == UserAction::Down) {
+            target.cycleMainMenuPlaybackMode();
         } else if (action == UserAction::Confirm && !target.nowPlayingConfirmBlocked()) {
             target.togglePlayPause();
         }

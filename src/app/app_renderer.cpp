@@ -32,10 +32,8 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"OK", "OPEN"},
             {"F2/F3", "PLAY / PAUSE"},
             {"F4/F5", "PREV / NEXT"},
-            {"F6", "SHUFFLE"},
-            {"F7", "LOOP ALL"},
-            {"F8", "LOOP ONE"},
-            {"R", "REMIX FX"},
+            {"F6", "PLAY MODE"},
+            {"R", "REMIX MODE"},
             {"F9-F12", "SEARCH LIB QUEUE SET"},
         };
     case AppPage::Songs:
@@ -47,8 +45,8 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"BACKSPACE", "BACK"},
             {"T", "SORT"},
             {"E/INS", "EDIT PLAYLIST"},
-            {"F2-F8", "PLAYBACK"},
-            {"R", "REMIX FX"},
+            {"F2-F6", "PLAYBACK"},
+            {"R", "REMIX MODE"},
             {"F9", "SEARCH"},
         };
     case AppPage::NowPlaying:
@@ -56,12 +54,11 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"OK", "PLAY / PAUSE"},
             {"LEFT", "PREVIOUS"},
             {"RIGHT", "NEXT"},
-            {"UP", "SHUFFLE"},
-            {"DOWN", "REPEAT"},
+            {"UP/DOWN", "PLAY MODE"},
             {"L", "LYRICS"},
             {"Q", "QUEUE"},
-            {"F2-F8", "PLAYBACK"},
-            {"R", "REMIX FX"},
+            {"F2-F6", "PLAYBACK"},
+            {"R", "REMIX MODE"},
             {"HOME", "MENU"},
         };
     case AppPage::Lyrics:
@@ -69,8 +66,8 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"L", "NOW PLAYING"},
             {"LEFT/RIGHT", "PREV / NEXT"},
             {"BACKSPACE", "BACK"},
-            {"F2-F8", "PLAYBACK"},
-            {"R", "REMIX FX"},
+            {"F2-F6", "PLAYBACK"},
+            {"R", "REMIX MODE"},
             {"HOME", "MENU"},
         };
     case AppPage::Equalizer:
@@ -79,8 +76,8 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"UP/DOWN", "+/- 1DB"},
             {"PGUP/PGDN", "+/- 3DB"},
             {"OK", "PRESET"},
-            {"F2-F8", "PLAYBACK"},
-            {"R", "REMIX FX"},
+            {"F2-F6", "PLAYBACK"},
+            {"R", "REMIX MODE"},
             {"HOME", "MENU"},
         };
     case AppPage::Search:
@@ -90,7 +87,7 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"UP/DOWN", "MOVE"},
             {"PGUP/PGDN", "PAGE"},
             {"OK", "PLAY"},
-            {"F2-F8", "PLAYBACK"},
+            {"F2-F6", "PLAYBACK"},
             {"HOME", "MENU"},
         };
     case AppPage::RemoteFieldEditor:
@@ -107,8 +104,8 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"OK", "OPEN"},
             {"DEL", "REMOVE"},
             {"BACKSPACE", "BACK"},
-            {"F2-F8", "PLAYBACK"},
-            {"R", "REMIX FX"},
+            {"F2-F6", "PLAYBACK"},
+            {"R", "REMIX MODE"},
             {"HOME", "MENU"},
         };
     case AppPage::MusicIndex:
@@ -130,8 +127,8 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"PGUP/PGDN", "PAGE"},
             {"OK", "OPEN"},
             {"BACKSPACE", "BACK"},
-            {"F2-F8", "PLAYBACK"},
-            {"R", "REMIX FX"},
+            {"F2-F6", "PLAYBACK"},
+            {"R", "REMIX MODE"},
             {"F9-F12", "SEARCH LIB QUEUE SET"},
             {"HOME", "MENU"},
         };
@@ -142,8 +139,8 @@ std::vector<std::pair<std::string_view, std::string_view>> helpRowsForPage(AppPa
             {"PGUP/PGDN", "PAGE"},
             {"OK", "OPEN"},
             {"BACKSPACE", "BACK"},
-            {"F2-F8", "PLAYBACK"},
-            {"R", "REMIX FX"},
+            {"F2-F6", "PLAYBACK"},
+            {"R", "REMIX MODE"},
             {"F9", "SEARCH"},
             {"HOME", "MENU"},
         };

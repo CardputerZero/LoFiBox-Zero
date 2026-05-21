@@ -126,7 +126,7 @@ int main()
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::F8));
     lofibox::app::routeInput(target, character('R'));
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::Right));
-    if (target.play_from_menu_calls != 1 || target.pause_calls != 1 || target.last_step_delta != 1 || target.step_track_calls != 2 || target.toggle_shuffle_calls != 1 || target.toggle_repeat_all_calls != 1 || target.toggle_repeat_one_calls != 1 || target.cycle_audio_effect_calls != 1 || target.main_menu_delta != 1) {
+    if (target.play_from_menu_calls != 1 || target.pause_calls != 1 || target.last_step_delta != 1 || target.step_track_calls != 2 || target.cycle_menu_mode_calls != 1 || target.toggle_shuffle_calls != 0 || target.toggle_repeat_all_calls != 0 || target.toggle_repeat_one_calls != 0 || target.cycle_audio_effect_calls != 1 || target.main_menu_delta != 1) {
         std::cerr << "Expected main menu shortcuts and navigation to route to menu commands.\n";
         return 1;
     }
@@ -146,8 +146,9 @@ int main()
 
     target.page = lofibox::app::AppPage::NowPlaying;
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::Down));
-    if (target.cycle_repeat_calls != 1) {
-        std::cerr << "Expected Now Playing repeat control to route.\n";
+    lofibox::app::routeInput(target, key(lofibox::app::InputKey::Up));
+    if (target.cycle_menu_mode_calls != 3 || target.cycle_repeat_calls != 0 || target.toggle_shuffle_calls != 0) {
+        std::cerr << "Expected Now Playing Up/Down to cycle the unified playback mode.\n";
         return 1;
     }
 
@@ -175,9 +176,11 @@ int main()
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::F3));
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::PageDown));
     lofibox::app::routeInput(target, character('T'));
+    const int list_delta_before_x = target.list_delta;
+    lofibox::app::routeInput(target, character('X'));
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::Down));
     lofibox::app::routeInput(target, key(lofibox::app::InputKey::Enter));
-    if (target.pause_calls != pause_calls_before + 1 || target.cycle_sort_calls != sort_calls_before + 1 || target.page_delta != 1 || target.list_delta != 1 || target.confirm_list_calls != 1) {
+    if (target.pause_calls != pause_calls_before + 1 || target.cycle_sort_calls != sort_calls_before + 1 || target.page_delta != 1 || target.list_delta != list_delta_before_x + 1 || target.confirm_list_calls != 1) {
         std::cerr << "Expected browse list transport shortcuts to stay global while list and page navigation still route.\n";
         return 1;
     }

@@ -2,40 +2,7 @@
 
 #include "app/input_actions.h"
 
-#include <cctype>
-
 namespace lofibox::app {
-namespace {
-
-UserAction mapCharacterAction(char ch)
-{
-    switch (static_cast<char>(std::toupper(static_cast<unsigned char>(ch)))) {
-    case 'W':
-    case 'K':
-        return UserAction::Up;
-    case 'S':
-    case 'J':
-    case 'X':
-        return UserAction::Down;
-    case 'A':
-    case 'H':
-    case 'Q':
-        return UserAction::Back;
-    case 'D':
-    case 'L':
-        return UserAction::Confirm;
-    case ',':
-        return UserAction::Left;
-    case '.':
-    case 'C':
-        return UserAction::Right;
-    default:
-        return UserAction::None;
-    }
-}
-
-} // namespace
-
 UserAction mapInput(const InputEvent& event)
 {
     switch (event.key) {
@@ -75,9 +42,6 @@ UserAction mapInput(const InputEvent& event)
     case InputKey::Next:
         return UserAction::NextTrack;
     case InputKey::Character:
-        if (const auto ch = singleAsciiText(event)) {
-            return mapCharacterAction(*ch);
-        }
         return UserAction::None;
     default:
         return UserAction::None;

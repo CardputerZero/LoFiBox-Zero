@@ -98,7 +98,7 @@ void drawShortcutHelpModal(core::Canvas& canvas, const UiTheme& theme)
         {"PGUP", "PAGE UP"},
         {"PGDN", "PAGE DOWN"},
         {"BACKSPACE", "BACK"},
-        {"F2-F8", "PLAYBACK"},
+        {"F2-F6", "PLAYBACK"},
         {"F9", "SEARCH"},
     };
 

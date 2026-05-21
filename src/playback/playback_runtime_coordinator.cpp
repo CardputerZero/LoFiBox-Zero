@@ -6,6 +6,39 @@
 #include <utility>
 
 namespace lofibox::app {
+namespace {
+
+constexpr double kFinishDurationGuardSeconds = 0.25;
+constexpr double kFinishConfirmationSeconds = 0.8;
+
+void resetFinishPending(PlaybackSession& session) noexcept
+{
+    session.finish_pending = false;
+    session.finish_pending_seconds = 0.0;
+}
+
+bool deferEarlyFinish(PlaybackSession& session, int duration_seconds, double delta_seconds) noexcept
+{
+    if (duration_seconds <= 0) {
+        return false;
+    }
+
+    const double duration = static_cast<double>(duration_seconds);
+    const double guard_position = std::max(0.0, duration - kFinishDurationGuardSeconds);
+    if (!session.finish_pending && session.elapsed_seconds >= guard_position) {
+        return false;
+    }
+
+    session.finish_pending = true;
+    session.finish_pending_seconds += std::max(0.0, delta_seconds);
+    session.elapsed_seconds = std::min(
+        duration,
+        std::max(session.elapsed_seconds + std::max(0.0, delta_seconds), guard_position));
+    session.visualization_frame = {};
+    return session.finish_pending_seconds < kFinishConfirmationSeconds;
+}
+
+} // namespace
 
 void PlaybackRuntimeCoordinator::setServices(RuntimeServices* services) noexcept
 {
@@ -20,6 +53,7 @@ void PlaybackRuntimeCoordinator::setDspProfile(audio::dsp::DspChainProfile profi
 void PlaybackRuntimeCoordinator::beginTrack(PlaybackSession& session) const noexcept
 {
     clock_.resetForTrack(session);
+    resetFinishPending(session);
     session.current_lyrics = {};
     session.lyrics_lookup_pending = true;
     session.visualization_pending = false;
@@ -41,6 +75,7 @@ bool PlaybackRuntimeCoordinator::startBackendUri(const std::string& uri, Playbac
 bool PlaybackRuntimeCoordinator::seekBackend(const std::filesystem::path& path, double seconds, PlaybackSession& session)
 {
     session.elapsed_seconds = std::max(0.0, seconds);
+    resetFinishPending(session);
     session.audio_active = audio_pipeline_.startFile(path, session.elapsed_seconds);
     if (session.audio_active) {
         session.status = PlaybackStatus::Playing;
@@ -97,6 +132,7 @@ void PlaybackRuntimeCoordinator::stop(PlaybackSession& session) noexcept
     session.status = PlaybackStatus::Paused;
     session.audio_active = false;
     session.elapsed_seconds = 0.0;
+    resetFinishPending(session);
     session.visualization_pending = false;
     session.visualization_frame = {};
 }
@@ -130,6 +166,10 @@ void PlaybackRuntimeCoordinator::tick(
     const auto backend_state = session.audio_active ? audio_pipeline_.state() : AudioPlaybackState::Idle;
 
     if (session.audio_active && backend_state == AudioPlaybackState::Finished) {
+        if (deferEarlyFinish(session, duration_seconds, delta_seconds)) {
+            return;
+        }
+        resetFinishPending(session);
         if (advanceAfterFinish(queue, session, play_index)) {
             return;
         }
@@ -151,6 +191,7 @@ void PlaybackRuntimeCoordinator::tick(
         case AudioPlaybackState::Failed:
             session.audio_active = false;
             session.status = PlaybackStatus::Paused;
+            resetFinishPending(session);
             session.visualization_frame = {};
             return;
         case AudioPlaybackState::Idle:
@@ -163,6 +204,7 @@ void PlaybackRuntimeCoordinator::tick(
 
     const bool backend_progressing = session.audio_active && backend_state == AudioPlaybackState::Playing;
     if (backend_progressing) {
+        resetFinishPending(session);
         clock_.advance(session, delta_seconds);
     }
     const PlaybackStabilitySample stability_sample{

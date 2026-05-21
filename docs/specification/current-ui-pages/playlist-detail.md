@@ -73,7 +73,7 @@ Supported playlist semantics:
   - `BACKSPACE`: back
   - `T`: sort
   - `E` / `INS`: edit playlist
-  - `F2` through `F8`: global playback controls
+  - `F2` through `F6`: global playback controls
   - `F9`: search
 - The modal `MUST NOT` reuse Main Menu shortcut content.
 

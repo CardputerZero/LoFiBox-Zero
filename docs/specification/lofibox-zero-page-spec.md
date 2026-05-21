@@ -110,9 +110,11 @@ LoFiBox Zero targets the Debian/Linux handheld keyboard layout as a product inpu
 
 - `F1` is always page-local help except on `Boot`.
 - `F2` resumes or starts playback; `F3` pauses playback; `F4` selects the previous track; `F5` selects the next track.
-- `F6` toggles shuffle; `F7` toggles repeat-all loop; `F8` toggles repeat-one loop. These are separate controls and `MUST NOT` be collapsed into an ambiguous mode cycle in the runtime router or help text.
+- `F6` cycles the user-facing playback mode in this order: order, shuffle, repeat-all, repeat-one, order. GUI/device shortcut help must describe this as a play-mode command rather than exposing separate shuffle/repeat booleans.
+- `F7` and `F8` are not GUI/device playback-mode shortcuts. Repeat-all and repeat-one may still exist as explicit runtime or CLI commands, but the primary GUI/device input surface must present playback mode as one cycle.
 - `F9` opens Search; `F10` opens Library; `F11` opens Up Next; `F12` opens Settings.
 - `UP` and `DOWN` move one row in list-like pages. `PGUP` and `PGDN` move by one viewport in list-like pages.
+- Framebuffer/evdev adapters must treat Linux `EV_KEY` codes as the input truth. `KEY_UP`, `KEY_DOWN`, `KEY_LEFT`, and `KEY_RIGHT` may become direction actions; ordinary letter events such as `KEY_X`, `KEY_F`, `KEY_S`, `KEY_Z`, and `KEY_C` must remain text/character events unless the kernel or driver reports a real direction key event.
 - On the Main Menu, `LEFT` and `RIGHT` move one page preview; `PGUP` and `PGDN` jump by a larger page step; `HOME` resets to the first menu item.
 - Outside the Main Menu, `HOME` returns to the Main Menu. `BACKSPACE` returns to the previous page unless the current page is a text editor that owns backspace for editing.
 - Text-entry pages own committed UTF-8 text, `BACKSPACE`, and `OK` while editing according to `lofibox-zero-text-input-spec.md`. Global playback keys must not corrupt text buffers.

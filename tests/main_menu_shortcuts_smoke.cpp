@@ -116,35 +116,36 @@ int main()
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F6, "F6", '\0'});
     snapshot = app.snapshot();
     if (!snapshot.shuffle_enabled || snapshot.repeat_one || snapshot.repeat_all) {
-        std::cerr << "Expected Main Menu F6 to toggle shuffle mode.\n";
+        std::cerr << "Expected Main Menu F6 to cycle from order to shuffle mode.\n";
         return 1;
     }
 
-    app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F7, "F7", '\0'});
+    app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F6, "F6", '\0'});
     snapshot = app.snapshot();
-    if (!snapshot.shuffle_enabled || snapshot.repeat_one || !snapshot.repeat_all) {
-        std::cerr << "Expected Main Menu F7 to enable loop mode without changing shuffle.\n";
+    if (snapshot.shuffle_enabled || snapshot.repeat_one || !snapshot.repeat_all) {
+        std::cerr << "Expected second Main Menu F6 press to cycle to repeat-all mode.\n";
         return 1;
     }
 
-    app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F8, "F8", '\0'});
+    app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F6, "F6", '\0'});
     snapshot = app.snapshot();
-    if (!snapshot.shuffle_enabled || snapshot.repeat_all || !snapshot.repeat_one) {
-        std::cerr << "Expected Main Menu F8 to enable single-track repeat without changing shuffle.\n";
-        return 1;
-    }
-
-    app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F8, "F8", '\0'});
-    snapshot = app.snapshot();
-    if (!snapshot.shuffle_enabled || snapshot.repeat_one || snapshot.repeat_all) {
-        std::cerr << "Expected second Main Menu F8 press to disable single-track repeat.\n";
+    if (snapshot.shuffle_enabled || snapshot.repeat_all || !snapshot.repeat_one) {
+        std::cerr << "Expected third Main Menu F6 press to cycle to repeat-one mode.\n";
         return 1;
     }
 
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F6, "F6", '\0'});
     snapshot = app.snapshot();
     if (snapshot.shuffle_enabled || snapshot.repeat_one || snapshot.repeat_all) {
-        std::cerr << "Expected second Main Menu F6 press to disable shuffle mode.\n";
+        std::cerr << "Expected fourth Main Menu F6 press to return to order mode.\n";
+        return 1;
+    }
+
+    app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F7, "F7", '\0'});
+    app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::F8, "F8", '\0'});
+    snapshot = app.snapshot();
+    if (snapshot.shuffle_enabled || snapshot.repeat_one || snapshot.repeat_all) {
+        std::cerr << "Expected Main Menu F7/F8 not to mutate the unified playback mode.\n";
         return 1;
     }
 

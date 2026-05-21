@@ -348,7 +348,7 @@ button:active{transform:scale(.94);transition:transform .08s}
         <button onclick="sendCmd('EqCyclePreset',{delta:1})" title="Next preset">&gt;</button>
       </div>
       <button class="eq-toggle" id="eq-toggle" onclick="toggleEq()">OFF</button>
-      <button class="eq-toggle" id="remix-toggle" onclick="sendCmd('AudioEffectCycle')" title="Cycle Radio, Tape, Vinyl">REMIX OFF</button>
+      <button class="eq-toggle" id="remix-toggle" onclick="sendCmd('AudioEffectCycle')" title="Cycle Radio, Tape, Vinyl">FX OFF</button>
     </div>
     <div class="eq-bands" id="eq-bands"></div>
     <div class="eq-actions">
@@ -742,7 +742,7 @@ function renderEq(){
   toggle.className='eq-toggle'+(eq.enabled?' on':'');
   const remix=document.getElementById('remix-toggle');
   if(remix){
-    remix.textContent='REMIX '+(eq.effect_name||'OFF');
+    remix.textContent='FX '+(eq.effect_name||'OFF');
     remix.className='eq-toggle'+(eq.effect_enabled?' on':'');
   }
   const bands=eq.bands||[0,0,0,0,0,0,0,0,0,0];

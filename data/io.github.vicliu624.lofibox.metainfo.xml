@@ -21,6 +21,11 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.4" date="2026-05-21">
+      <description>
+        <p>Guards automatic advance against premature backend Finished states, unifies GUI/device playback-mode shortcuts, labels audio effects as FX, and keeps Linux evdev letter keys as character input unless the kernel reports a real direction key.</p>
+      </description>
+    </release>
     <release version="0.2.3" date="2026-05-21">
       <description>
         <p>Fixes APPLaunch and service-style startup when HOME is unset by resolving runtime paths and the default Music root from the effective user's account home, and requests a running library refresh after CLI local-root mutations.</p>

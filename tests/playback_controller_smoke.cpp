@@ -323,8 +323,31 @@ int main()
         std::cerr << "Expected playback controller to start a track with a finishing backend.\n";
         return 1;
     }
+    if (auto* track = library.findMutableTrack(ids.front())) {
+        track->duration_seconds = 10;
+    }
+    playback.update(1.0, library);
+    backend->finished = true;
+    playback.update(0.016, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected an early backend Finished state not to advance before the finish guard confirms completion.\n";
+        return 1;
+    }
+    if (!playback.session().finish_pending || playback.session().elapsed_seconds < 9.70) {
+        std::cerr << "Expected early backend Finished state to enter pending finish and project progress near track duration.\n";
+        return 1;
+    }
+    playback.update(0.8, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id == ids.front()) {
+        std::cerr << "Expected pending finish to advance after the confirmation window expires.\n";
+        return 1;
+    }
+
+    if (!playback.startTrack(library, ids.front())) {
+        std::cerr << "Expected playback controller to restart a track with a finishing backend.\n";
+        return 1;
+    }
     playback.update(4.0, library);
-    const double before_finish = playback.session().elapsed_seconds;
     backend->finished = true;
     playback.update(4.0, library);
     if (!playback.session().current_track_id || *playback.session().current_track_id == ids.front()) {
@@ -340,6 +363,10 @@ int main()
         std::cerr << "Expected last track to start.\n";
         return 1;
     }
+    constexpr int last_track_duration_seconds = 10;
+    if (auto* track = library.findMutableTrack(ids.back())) {
+        track->duration_seconds = last_track_duration_seconds;
+    }
     playback.setRepeatAll(false);
     backend->finished = true;
     playback.update(1.0, library);
@@ -347,7 +374,7 @@ int main()
         std::cerr << "Expected normal playback to pause when the last track finishes.\n";
         return 1;
     }
-    if (playback.session().elapsed_seconds > before_finish + 10.0) {
+    if (playback.session().elapsed_seconds > static_cast<double>(last_track_duration_seconds) + 0.01) {
         std::cerr << "Expected elapsed time to remain bounded after final finish.\n";
         return 1;
     }
@@ -426,8 +453,13 @@ int main()
         return 1;
     }
     race_playback.update(0.016, library);
+    if (!race_playback.session().current_track_id || *race_playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected early deferred finish polling not to skip the finish guard.\n";
+        return 1;
+    }
+    race_playback.update(0.8, library);
     if (!race_playback.session().current_track_id || *race_playback.session().current_track_id == ids.front()) {
-        std::cerr << "Expected deferred finish polling to advance on the next update.\n";
+        std::cerr << "Expected deferred finish polling to advance after the finish guard.\n";
         return 1;
     }
 

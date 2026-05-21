@@ -3,13 +3,17 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "app/input_event.h"
 
 namespace lofibox::platform::device {
+
+[[nodiscard]] std::optional<app::InputEvent> translateLinuxEvdevCommandKey(std::uint32_t keycode);
 
 class LinuxEvdevKeyboard {
 public:

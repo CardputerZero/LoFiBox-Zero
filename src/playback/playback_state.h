@@ -44,6 +44,8 @@ struct PlaybackSession {
     double elapsed_seconds{0.0};
     std::uint64_t transition_generation{0};
     bool audio_active{false};
+    bool finish_pending{false};
+    double finish_pending_seconds{0.0};
     bool lyrics_lookup_pending{false};
     std::optional<core::Canvas> current_artwork{};
     TrackLyrics current_lyrics{};

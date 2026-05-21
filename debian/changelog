@@ -1,3 +1,15 @@
+lofibox (0.2.4-1) UNRELEASED; urgency=medium
+
+  * New upstream release 0.2.4.
+  * Guard automatic track advance against premature backend Finished states
+    when the known track duration has not reached the end of playback.
+  * Collapse GUI/device playback-mode shortcuts to one cycle and label audio
+    effects as REMIX MODE.
+  * Treat standard Linux evdev direction key events as the only direction
+    source; ordinary letter key events remain character input.
+
+ -- LoFiBox contributors <maintainers@example.invalid>  Thu, 21 May 2026 19:00:00 +0800
+
 lofibox (0.2.3-1) UNRELEASED; urgency=medium
 
   * New upstream release 0.2.3.

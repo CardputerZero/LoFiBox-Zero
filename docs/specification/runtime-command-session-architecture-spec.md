@@ -318,6 +318,13 @@ Required guardrails:
   `Paused` with `audio_active=false`, and the runtime command result must be
   `applied=false`. The previous `PLAYING` projection must not survive a failed
   seek.
+- Queue completion must not trust `AudioPlaybackState::Finished` alone when a
+  known duration exists. If the backend reports finished while the projected
+  playback position is still materially before the known duration, runtime
+  ticking must enter a short finish-confirmation guard before advancing the
+  queue. A completion may advance when the projected position reaches the
+  duration guard, the confirmation window expires, or no reliable duration is
+  known.
 - Presentation targets may display honest fallback states, but those fallback
   states must not feed back into runtime truth.
 

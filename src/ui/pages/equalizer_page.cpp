@@ -192,8 +192,8 @@ void renderEqualizerPage(core::Canvas& canvas, const EqualizerPageView& view, co
     ::lofibox::ui::drawText(canvas, "PRESET", 14, 145, theme.palette.text_muted, 1);
     const auto preset = "< " + ::lofibox::ui::fitUpper(view.preset_name, 14) + " >";
     drawCenteredText(canvas, preset, 174, 145, theme.palette.text_secondary);
-    ::lofibox::ui::drawText(canvas, "REMIX", 238, 145, theme.palette.text_muted, 1);
-    ::lofibox::ui::drawText(canvas, ::lofibox::ui::fitUpper(view.effect_name, 7), 274, 145, theme.palette.focus_edge, 1);
+    ::lofibox::ui::drawText(canvas, "FX", 248, 145, theme.palette.text_muted, 1);
+    ::lofibox::ui::drawText(canvas, ::lofibox::ui::fitUpper(view.effect_name, 8), 268, 145, theme.palette.focus_edge, 1);
 }
 
 } // namespace lofibox::ui::pages

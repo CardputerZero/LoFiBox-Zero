@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.2.3 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.4 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -695,6 +695,15 @@ if(BUILD_TESTING)
     add_executable(lofibox_cardputer_applaunch_metadata_smoke tests/cardputer_applaunch_metadata_smoke.cpp)
     target_compile_definitions(lofibox_cardputer_applaunch_metadata_smoke PRIVATE LOFIBOX_PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME lofibox_cardputer_applaunch_metadata_smoke COMMAND lofibox_cardputer_applaunch_metadata_smoke)
+
+    if(LOFIBOX_BUILD_DEVICE)
+        add_executable(lofibox_linux_evdev_keyboard_smoke
+            tests/linux_evdev_keyboard_smoke.cpp
+            src/platform/device/linux_evdev_keyboard.cpp
+        )
+        target_link_libraries(lofibox_linux_evdev_keyboard_smoke PRIVATE lofibox_zero_core PkgConfig::XKBCOMMON)
+        add_test(NAME lofibox_linux_evdev_keyboard_smoke COMMAND lofibox_linux_evdev_keyboard_smoke)
+    endif()
 
     add_executable(lofibox_packaging_version_metadata_smoke tests/packaging_version_metadata_smoke.cpp)
     target_compile_definitions(lofibox_packaging_version_metadata_smoke PRIVATE

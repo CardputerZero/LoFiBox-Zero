@@ -549,10 +549,10 @@ dry signal preserved
 | Surface | Trigger | Behavior |
 |---------|---------|----------|
 | GUI (framebuffer) | `R` key | Cycles OFF → Radio → Tape → Vinyl → OFF |
-| GUI Equalizer page | — | Displays current effect name ("REMIX: RADIO") |
+ | GUI Equalizer page | — | Displays current effect name as FX, for example `FX: RADIO` |
 | GUI Now Playing | — | Displays effect name top-right when active |
 | TUI | `R` (uppercase) | Same cycle; `r` (lowercase) is reconnect |
-| WebUI | REMIX button or `R` key | Sends `AudioEffectCycle` command; button label updates to show current effect |
+ | WebUI | FX button or `R` key | Sends `AudioEffectCycle` command; button label updates to show current effect |
 | CLI | `lofibox remix` | Sends `AudioEffectCycle` via runtime socket |
 
 **Search page exclusion**: On the Search page, the `R` key is treated as text input, not as the effect shortcut. The input router checks `page != AppPage::Search` before routing to `cycleAudioEffect()`.
@@ -603,6 +603,6 @@ As of 2026-04-27, the DSP baseline is a chain/profile domain rather than an EQ-p
 - Playback stability policy owns gapless/crossfade preparation, transition lead time, and start/end jitter suppression as playback-chain behavior rather than visual behavior.
 - The active compact EQ page state is converted into the playback `DspChainProfile`; slider and preset changes hot-update the running PCM DSP engine and must not restart the track.
 - For the Debian host target, local and remote playback converge through a realtime PCM path: media is decoded to PCM, processed by the active `DspChain`, and then handed to the Linux output sink.
-- Built-in audio effects (Radio, Tape, Vinyl) are registered via `AudioEffectDescriptor` entries in `audio_effect_registry.cpp`, selected through the `AudioEffectProfile` slot on `DspChainProfile`, and rendered by `RealtimeDspEngine` using dedicated biquad chains, modulation oscillators, a shared xorshift32 noise source, and `tanh` soft-saturation. Effect switching hot-updates the DSP engine without track restart, resets all per-effect filter and modulation state, and is exposed through GUI (`R` key), TUI (`R` key), WebUI (REMIX button), and CLI (`lofibox remix`).
+ - Built-in audio effects (Radio, Tape, Vinyl) are registered via `AudioEffectDescriptor` entries in `audio_effect_registry.cpp`, selected through the `AudioEffectProfile` slot on `DspChainProfile`, and rendered by `RealtimeDspEngine` using dedicated biquad chains, modulation oscillators, a shared xorshift32 noise source, and `tanh` soft-saturation. Effect switching hot-updates the DSP engine without track restart, resets all per-effect filter and modulation state, and is exposed through GUI (`R` key), TUI (`R` key), WebUI (FX button), and CLI (`lofibox remix`).
 
 Future rendering pages may expose simple, advanced, or professional controls, but they must not redefine the DSP domain.

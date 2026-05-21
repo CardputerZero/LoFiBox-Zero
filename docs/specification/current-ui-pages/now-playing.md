@@ -45,8 +45,7 @@
 - Previous control
 - Play/Pause control
 - Next control
-- Shuffle control
-- Repeat control
+- Playback mode control
 
 ## 7. Event Contract
 
@@ -58,10 +57,8 @@
   - effect: request next track
 - `EVT_CONFIRM`
   - effect: toggle play or pause
-- `EVT_SHUFFLE_TOGGLED`
-  - effect: toggle sequential versus shuffle mode
-- `EVT_REPEAT_TOGGLED`
-  - effect: toggle sequential versus repeat-one mode
+- `EVT_PLAY_MODE_CYCLED`
+  - effect: cycle playback mode through order, shuffle, repeat-all, repeat-one
 - `EVT_BACK`
   - effect: return to the previous page in the navigation stack
 - `EVT_PLAYBACK_TRACK_CHANGED`
@@ -72,8 +69,7 @@
 - `STATE_NOW_PLAYING_ACTIVE + EVT_NAV_LEFT` -> effect: request previous track and refresh state -> `STATE_NOW_PLAYING_ACTIVE`
 - `STATE_NOW_PLAYING_ACTIVE + EVT_NAV_RIGHT` -> effect: request next track and refresh state -> `STATE_NOW_PLAYING_ACTIVE`
 - `STATE_NOW_PLAYING_ACTIVE + EVT_CONFIRM` -> effect: toggle play/pause -> `STATE_NOW_PLAYING_ACTIVE`
-- `STATE_NOW_PLAYING_ACTIVE + EVT_SHUFFLE_TOGGLED` -> effect: update shuffle mode -> `STATE_NOW_PLAYING_ACTIVE`
-- `STATE_NOW_PLAYING_ACTIVE + EVT_REPEAT_TOGGLED` -> effect: update repeat mode -> `STATE_NOW_PLAYING_ACTIVE`
+- `STATE_NOW_PLAYING_ACTIVE + EVT_PLAY_MODE_CYCLED` -> effect: update playback mode -> `STATE_NOW_PLAYING_ACTIVE`
 - `STATE_NOW_PLAYING_ACTIVE + EVT_BACK` -> effect: return to previous page -> previous page
 - `STATE_NOW_PLAYING_ACTIVE + EVT_PLAYBACK_TRACK_CHANGED [guard: no active track remains]` -> effect: clear playback metadata -> `STATE_NOW_PLAYING_EMPTY`
 - `STATE_NOW_PLAYING_EMPTY + EVT_PLAYBACK_TRACK_CHANGED [guard: active track now exists]` -> effect: load current track metadata -> `STATE_NOW_PLAYING_ACTIVE`

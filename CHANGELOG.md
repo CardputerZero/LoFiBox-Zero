@@ -7,6 +7,15 @@ All notable changes to LoFiBox Zero will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-05-21
+
+### Changed
+- GUI/device playback mode shortcuts now use one cycle: order -> shuffle -> repeat all -> repeat one -> order. Main Menu `F6` and Now Playing Up/Down trigger the same playback-mode command, while `F7`/`F8` are no longer primary GUI/device playback-mode shortcuts.
+
+### Fixed
+- Fixed premature auto-advance when an audio backend reports `Finished` before the UI/player clock has reached the known track duration by adding a short finish-confirmation guard.
+- Fixed Linux evdev keyboard direction handling so only standard `KEY_UP`, `KEY_DOWN`, `KEY_LEFT`, and `KEY_RIGHT` events become direction commands; ordinary letter keys such as `KEY_X`, `KEY_F`, `KEY_S`, `KEY_Z`, and `KEY_C` remain character input.
+
 ## [0.2.3] - 2026-05-21
 
 ### Changed
