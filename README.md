@@ -2,7 +2,33 @@
 
 # LoFiBox Zero
 
-LoFiBox Zero is a Linux-first music player for the Cardputer Zero class of devices.
+<p align="center">
+  <img src="docs/assets/logo.png" alt="LoFiBox Zero logo" width="120">
+</p>
+
+LoFiBox Zero is a Linux-first music player for compact keyboard-driven devices and chromeless desktop-widget sessions. It presents the same focused `320x170` player surface on the Cardputer Zero class of hardware, the Linux framebuffer device target, and the direct Linux X11 target.
+
+It is built around local library playback, durable media roots, metadata and artwork enrichment, lyrics, queue control, remote media sources, and a DSP-ready audio pipeline. The goal is a small music appliance that feels deliberate rather than a resized desktop app.
+
+## Player Surface
+
+| Now Playing | Library Menus |
+|:--:|:--:|
+| <img src="docs/assets/playing.png" alt="LoFiBox Zero now-playing page with album art, transport state, progress, and spectrum visualization" width="420"> | <img src="docs/assets/menus.png" alt="LoFiBox Zero menu and library navigation pages on the compact player surface" width="420"> |
+| Lyrics | Equalizer |
+| <img src="docs/assets/lyric.png" alt="LoFiBox Zero lyrics page with timed lyric focus and playback context" width="420"> | <img src="docs/assets/EQ.png" alt="LoFiBox Zero equalizer page with band controls and spectrum visualization" width="420"> |
+
+The screenshots show the product surface, not a mock desktop simulator. LoFiBox keeps one runtime path and lets the target adapters provide Linux presentation, input, audio, filesystem, and service integration.
+
+## Highlights
+
+- Compact chromeless player UI for a `320x170` logical screen
+- Local library indexing from durable configured media roots, defaulting to `~/Music`
+- Queue, search, lyrics, artwork, metadata enrichment, and tag writeback services
+- Remote media profiles for Jellyfin, Emby, OpenSubsonic/Navidrome-style servers, playlists, WebDAV, DLNA/UPnP, and other governed source families
+- Runtime command surface for live playback, queue, EQ, diagnostics, and library refresh
+- Direct CLI, TUI, Linux X11, and Linux framebuffer/device targets sharing the same app semantics
+- Debian-oriented build, packaging, AppStream, desktop integration, and release discipline
 
 The repository intentionally keeps one product runtime path:
 
@@ -22,6 +48,7 @@ There is no SDL desktop simulator in this project. The app should be validated t
 - `src/platform/device`: Linux framebuffer and evdev/xkb input adapters
 - `src/targets/device_main.cpp`: Linux product entry point
 - `assets`: icons, logo, fonts, and other product assets
+- `docs/assets`: README and documentation screenshots
 - `docker/dev-container.Dockerfile`: container image for Linux builds
 - `scripts/run-dev-container.*`: build/run helper for the Linux device target inside the container
 
