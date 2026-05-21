@@ -53,6 +53,7 @@ int main(int argc, char** argv)
         lofibox::webui::WebUiConfig webui_config{};
         lofibox::webui::parseWebUiFromArgs(argc, argv, webui_config);
         if (webui_config.enabled) {
+            services.ui.webui_url = lofibox::webui::displayUrlForWebUi(webui_config);
             auto webui_ctx = std::make_shared<
                 std::pair<std::unique_ptr<lofibox::webui::WebUiRuntimeAdapter>,
                           std::unique_ptr<lofibox::webui::WebUiServer>>>();

@@ -179,8 +179,7 @@ bool PlaybackController::playQueueIndex(LibraryController& library_controller, i
     session_.current_stream_live = false;
     session_.status = PlaybackStatus::Playing;
     runtime_.beginTrack(session_);
-    refreshMetadata(library_controller, MetadataReadMode::LocalOnly);
-    refreshArtwork(library_controller, ArtworkReadMode::LocalOnly);
+    session_.current_artwork.reset();
     const bool started = runtime_.startBackend(track->path, session_);
     if (!started) {
         session_.status = PlaybackStatus::Paused;
@@ -189,6 +188,8 @@ bool PlaybackController::playQueueIndex(LibraryController& library_controller, i
         session_.visualization_frame = {};
         return false;
     }
+    refreshMetadata(library_controller, MetadataReadMode::LocalOnly);
+    refreshArtwork(library_controller, ArtworkReadMode::LocalOnly);
     recordPlaybackStarted(*track);
     enrichment_.request(*track);
     return true;
@@ -397,4 +398,3 @@ void PlaybackController::recordPlaybackStarted(TrackRecord& track)
 }
 
 } // namespace lofibox::app
-

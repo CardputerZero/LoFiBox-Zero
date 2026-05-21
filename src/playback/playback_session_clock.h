@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "app/library_model.h"
 #include "playback/playback_state.h"
 
@@ -11,6 +13,7 @@ class PlaybackSessionClock {
 public:
     void resetForTrack(PlaybackSession& session) const noexcept;
     void advance(PlaybackSession& session, double delta_seconds) const noexcept;
+    void advance(PlaybackSession& session, double delta_seconds, std::optional<double> backend_position_seconds) const noexcept;
     void clampToTrackDuration(PlaybackSession& session, const TrackRecord* track) const noexcept;
 };
 

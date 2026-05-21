@@ -7,13 +7,23 @@ All notable changes to LoFiBox Zero will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-05-21
+
+### Changed
+- Linux builds now compile the WebUI target by default, so default Linux CI configurations build `lofibox_webui` and run its smoke coverage without an opt-in CMake flag.
+- Settings now shows the WebUI address when the WebUI is enabled and network status is online; long addresses remain in the normal right-side value column and scroll inside that bounded area.
+
+### Fixed
+- Fixed premature auto-advance when an audio backend reports `Finished` before the playback clock has reached the known track duration by requiring the projected position to be within 1.5 seconds of the end before queue completion can run.
+- Restored realtime throttling for local Linux PCM decoding so ffmpeg does not decode an entire local file far ahead of the PipeWire/ALSA sink.
+- Reduced local Linux track-switch latency by moving old realtime PCM pipeline shutdown off the critical path, removing blocking local output-confirmation retry from startup, and starting audio before synchronous local metadata/artwork refresh.
+
 ## [0.2.4] - 2026-05-21
 
 ### Changed
 - GUI/device playback mode shortcuts now use one cycle: order -> shuffle -> repeat all -> repeat one -> order. Main Menu `F6` and Now Playing Up/Down trigger the same playback-mode command, while `F7`/`F8` are no longer primary GUI/device playback-mode shortcuts.
 
 ### Fixed
-- Fixed premature auto-advance when an audio backend reports `Finished` before the UI/player clock has reached the known track duration by adding a short finish-confirmation guard.
 - Fixed Linux evdev keyboard direction handling so only standard `KEY_UP`, `KEY_DOWN`, `KEY_LEFT`, and `KEY_RIGHT` events become direction commands; ordinary letter keys such as `KEY_X`, `KEY_F`, `KEY_S`, `KEY_Z`, and `KEY_C` remain character input.
 
 ## [0.2.3] - 2026-05-21

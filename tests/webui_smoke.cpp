@@ -122,6 +122,16 @@ void test_config_cli_parsing()
         assert(config4.port == 8765); // unchanged
     }
 
+    {
+        lofibox::webui::WebUiConfig display_config{};
+        assert(lofibox::webui::displayUrlForWebUi(display_config) == "http://<device-ip>:8765");
+        display_config.bind_address = "127.0.0.1";
+        display_config.port = 9999;
+        assert(lofibox::webui::displayUrlForWebUi(display_config) == "http://localhost:9999");
+        display_config.bind_address = "192.168.1.20";
+        assert(lofibox::webui::displayUrlForWebUi(display_config) == "http://192.168.1.20:9999");
+    }
+
     std::cout << "  PASS: config CLI parsing\n";
 }
 

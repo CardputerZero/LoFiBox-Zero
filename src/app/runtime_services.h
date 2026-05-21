@@ -144,6 +144,7 @@ public:
     virtual void setDspProfile(const ::lofibox::audio::dsp::DspChainProfile& profile) { (void)profile; }
     [[nodiscard]] virtual bool isPlaying() = 0;
     [[nodiscard]] virtual bool isFinished() = 0;
+    [[nodiscard]] virtual std::optional<double> positionSeconds() const { return std::nullopt; }
     [[nodiscard]] virtual AudioPlaybackState state()
     {
         if (isFinished()) {
@@ -222,6 +223,7 @@ struct CacheServices {
 
 struct UiServices {
     std::shared_ptr<ui::UiTheme> theme{};
+    std::string webui_url{};
 };
 
 struct PluginServices {

@@ -136,6 +136,28 @@ public:
     fs::path last_path{};
 };
 
+class PositionReportingAudioBackend final : public lofibox::app::AudioPlaybackBackend {
+public:
+    [[nodiscard]] bool available() const override { return true; }
+    [[nodiscard]] std::string displayName() const override { return "POSITION-CLOCK-TEST"; }
+    bool playFile(const fs::path& path, double start_seconds) override
+    {
+        last_path = path;
+        state_value = lofibox::app::AudioPlaybackState::Playing;
+        position_seconds = start_seconds;
+        return true;
+    }
+    void stop() override { state_value = lofibox::app::AudioPlaybackState::Finished; }
+    [[nodiscard]] bool isPlaying() override { return state_value == lofibox::app::AudioPlaybackState::Playing; }
+    [[nodiscard]] bool isFinished() override { return state_value == lofibox::app::AudioPlaybackState::Finished; }
+    [[nodiscard]] lofibox::app::AudioPlaybackState state() override { return state_value; }
+    [[nodiscard]] std::optional<double> positionSeconds() const override { return position_seconds; }
+
+    lofibox::app::AudioPlaybackState state_value{lofibox::app::AudioPlaybackState::Idle};
+    double position_seconds{0.0};
+    fs::path last_path{};
+};
+
 class RemoteAudioBackend final : public lofibox::app::AudioPlaybackBackend {
 public:
     [[nodiscard]] bool available() const override { return true; }
@@ -330,16 +352,26 @@ int main()
     backend->finished = true;
     playback.update(0.016, library);
     if (!playback.session().current_track_id || *playback.session().current_track_id != ids.front()) {
-        std::cerr << "Expected an early backend Finished state not to advance before the finish guard confirms completion.\n";
+        std::cerr << "Expected an early backend Finished state not to advance while known duration remains.\n";
         return 1;
     }
-    if (!playback.session().finish_pending || playback.session().elapsed_seconds < 9.70) {
-        std::cerr << "Expected early backend Finished state to enter pending finish and project progress near track duration.\n";
+    if (!playback.session().finish_pending || playback.session().elapsed_seconds > 1.10) {
+        std::cerr << "Expected early backend Finished state to remain on the current playback clock instead of projecting near EOF.\n";
         return 1;
     }
     playback.update(0.8, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected early backend Finished state not to advance merely because a short elapsed interval passed.\n";
+        return 1;
+    }
+    playback.update(6.7, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected deferred finish not to advance on the same tick that first crosses the duration acceptance threshold.\n";
+        return 1;
+    }
+    playback.update(0.1, library);
     if (!playback.session().current_track_id || *playback.session().current_track_id == ids.front()) {
-        std::cerr << "Expected pending finish to advance after the confirmation window expires.\n";
+        std::cerr << "Expected deferred finish to advance only once the playback clock reaches the duration acceptance threshold.\n";
         return 1;
     }
 
@@ -350,6 +382,16 @@ int main()
     playback.update(4.0, library);
     backend->finished = true;
     playback.update(4.0, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected backend Finished with more than the accepted remaining duration not to advance yet.\n";
+        return 1;
+    }
+    playback.update(0.6, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected backend Finished not to advance on the same tick that first crosses the duration acceptance threshold.\n";
+        return 1;
+    }
+    playback.update(0.1, library);
     if (!playback.session().current_track_id || *playback.session().current_track_id == ids.front()) {
         std::cerr << "Expected normal playback finish to advance to next track when one exists.\n";
         return 1;
@@ -369,7 +411,12 @@ int main()
     }
     playback.setRepeatAll(false);
     backend->finished = true;
-    playback.update(1.0, library);
+    playback.update(8.6, library);
+    if (playback.session().status != lofibox::app::PlaybackStatus::Playing) {
+        std::cerr << "Expected last-track early finish to remain active while known duration remains.\n";
+        return 1;
+    }
+    playback.update(0.1, library);
     if (playback.session().status != lofibox::app::PlaybackStatus::Paused) {
         std::cerr << "Expected normal playback to pause when the last track finishes.\n";
         return 1;
@@ -395,7 +442,12 @@ int main()
         return 1;
     }
     backend->finished = true;
-    playback.update(1.0, library);
+    playback.update(8.6, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id != ids.back()) {
+        std::cerr << "Expected repeat-all last-track finish not to wrap before the duration acceptance threshold.\n";
+        return 1;
+    }
+    playback.update(0.1, library);
     if (!playback.session().current_track_id || *playback.session().current_track_id != ids.front()) {
         std::cerr << "Expected repeat-all finish on last track to wrap to first track.\n";
         return 1;
@@ -406,10 +458,22 @@ int main()
         std::cerr << "Expected middle track to start for repeat-one test.\n";
         return 1;
     }
+    if (auto* track = library.findMutableTrack(ids[1])) {
+        track->duration_seconds = 10;
+    }
     backend->finished = true;
-    playback.update(1.0, library);
+    playback.update(8.6, library);
+    if (!playback.session().current_track_id || *playback.session().current_track_id != ids[1]) {
+        std::cerr << "Expected repeat-one finish not to restart before the duration acceptance threshold.\n";
+        return 1;
+    }
+    playback.update(0.1, library);
     if (!playback.session().current_track_id || *playback.session().current_track_id != ids[1]) {
         std::cerr << "Expected repeat-one finish to restart the same track.\n";
+        return 1;
+    }
+    if (playback.session().elapsed_seconds > 0.01 || playback.session().status != lofibox::app::PlaybackStatus::Playing) {
+        std::cerr << "Expected repeat-one finish to restart playback from the beginning.\n";
         return 1;
     }
 
@@ -454,12 +518,22 @@ int main()
     }
     race_playback.update(0.016, library);
     if (!race_playback.session().current_track_id || *race_playback.session().current_track_id != ids.front()) {
-        std::cerr << "Expected early deferred finish polling not to skip the finish guard.\n";
+        std::cerr << "Expected early deferred finish polling not to skip the duration gate.\n";
         return 1;
     }
     race_playback.update(0.8, library);
+    if (!race_playback.session().current_track_id || *race_playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected deferred finish polling not to advance after a short elapsed interval.\n";
+        return 1;
+    }
+    race_playback.update(7.8, library);
+    if (!race_playback.session().current_track_id || *race_playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected deferred finish polling not to advance on the same tick that first crosses the duration acceptance threshold.\n";
+        return 1;
+    }
+    race_playback.update(0.1, library);
     if (!race_playback.session().current_track_id || *race_playback.session().current_track_id == ids.front()) {
-        std::cerr << "Expected deferred finish polling to advance after the finish guard.\n";
+        std::cerr << "Expected deferred finish polling to advance once the playback clock reaches the duration acceptance threshold.\n";
         return 1;
     }
 
@@ -500,6 +574,50 @@ int main()
     starting_playback.update(1.25, library);
     if (starting_playback.session().elapsed_seconds < 1.0 || !starting_playback.session().visualization_frame.available) {
         std::cerr << "Expected elapsed time and visualization to start after backend audio enters Playing.\n";
+        return 1;
+    }
+
+    auto position_services = lofibox::app::withNullRuntimeServices();
+    auto position_backend = std::make_shared<PositionReportingAudioBackend>();
+    position_services.playback.audio_backend = position_backend;
+    lofibox::app::PlaybackController position_playback{};
+    position_playback.setServices(position_services);
+    if (!position_playback.startTrack(library, ids.front())) {
+        std::cerr << "Expected position-reporting backend test to start a track request.\n";
+        return 1;
+    }
+    if (auto* track = library.findMutableTrack(ids.front())) {
+        track->duration_seconds = 20;
+    }
+    position_backend->position_seconds = 12.25;
+    position_playback.update(0.1, library);
+    if (position_playback.session().elapsed_seconds < 12.24 || position_playback.session().elapsed_seconds > 12.26) {
+        std::cerr << "Expected playback session clock to use backend position when available.\n";
+        return 1;
+    }
+    position_backend->position_seconds = 13.0;
+    position_playback.update(10.0, library);
+    if (position_playback.session().elapsed_seconds < 12.99 || position_playback.session().elapsed_seconds > 13.01) {
+        std::cerr << "Expected backend position to remain the playback clock truth instead of main-loop delta.\n";
+        return 1;
+    }
+    position_backend->state_value = lofibox::app::AudioPlaybackState::Finished;
+    position_backend->position_seconds = 7.0;
+    position_playback.update(10.0, library);
+    if (!position_playback.session().current_track_id || *position_playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected early Finished with a backend position far from duration not to auto-advance.\n";
+        return 1;
+    }
+    position_backend->position_seconds = 18.49;
+    position_playback.update(0.1, library);
+    if (!position_playback.session().current_track_id || *position_playback.session().current_track_id != ids.front()) {
+        std::cerr << "Expected Finished with more than the accepted remaining backend position not to auto-advance.\n";
+        return 1;
+    }
+    position_backend->position_seconds = 18.51;
+    position_playback.update(0.1, library);
+    if (!position_playback.session().current_track_id || *position_playback.session().current_track_id == ids.front()) {
+        std::cerr << "Expected Finished with backend position inside the acceptance threshold to auto-advance.\n";
         return 1;
     }
 

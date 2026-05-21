@@ -296,12 +296,13 @@ Required guardrails:
   failure, or inactive resume must remain `Paused` with `audio_active=false` and
   must return `applied=false` for the runtime command that failed to create live
   audio.
-- A local audio backend must not treat process creation alone as playback
-  acceptance. For local file playback, the backend must observe a bounded
-  output-start confirmation, or return failure to the playback runtime. A
-  one-time retry is allowed for transient sink teardown/startup races, but a
-  second unconfirmed start must remain a failed command rather than a fake
-  `PLAYING` projection.
+- A local audio backend may accept playback once the decoder and sink processes
+  start successfully, but it must project `Starting` until bounded output-start
+  evidence is observed. Startup confirmation must not block the playback
+  command path or retry synchronously in a way that makes track switching feel
+  stuck. If output fails after command acceptance, the backend must project
+  `Failed` and playback runtime must pause the current session rather than
+  auto-advance the queue.
 - Starting the currently active track id is idempotent. If the current session
   already has the same track id, `PlaybackStatus::Playing`, and
   `audio_active=true`, `PlaybackStartTrack` must return applied without
@@ -321,10 +322,9 @@ Required guardrails:
 - Queue completion must not trust `AudioPlaybackState::Finished` alone when a
   known duration exists. If the backend reports finished while the projected
   playback position is still materially before the known duration, runtime
-  ticking must enter a short finish-confirmation guard before advancing the
-  queue. A completion may advance when the projected position reaches the
-  duration guard, the confirmation window expires, or no reliable duration is
-  known.
+  ticking must keep the current item active and must not advance the queue. A
+  completion may advance only when the projected position is within the
+  accepted remaining-duration threshold, or when no reliable duration is known.
 - Presentation targets may display honest fallback states, but those fallback
   states must not feed back into runtime truth.
 

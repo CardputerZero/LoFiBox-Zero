@@ -15,6 +15,7 @@ struct SettingsProjectionInput {
     int backlight_index{0};
     bool remote_sources_available{false};
     int remote_source_type_count{0};
+    std::string webui_url{};
 };
 
 [[nodiscard]] std::vector<std::pair<std::string, std::string>> buildSettingsProjectionRows(const SettingsProjectionInput& input);

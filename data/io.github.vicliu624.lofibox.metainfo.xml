@@ -21,9 +21,14 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.5" date="2026-05-21">
+      <description>
+        <p>Fixes premature queue advance by using playback position semantics, realtime-throttles local Linux PCM decoding, reduces local Linux track-switch latency, builds WebUI by default on Linux, and shows the WebUI address in Settings while network status is online.</p>
+      </description>
+    </release>
     <release version="0.2.4" date="2026-05-21">
       <description>
-        <p>Guards automatic advance against premature backend Finished states, unifies GUI/device playback-mode shortcuts, labels audio effects as FX, and keeps Linux evdev letter keys as character input unless the kernel reports a real direction key.</p>
+        <p>Unifies GUI/device playback-mode shortcuts, labels audio effects as FX, and keeps Linux evdev letter keys as character input unless the kernel reports a real direction key.</p>
       </description>
     </release>
     <release version="0.2.3" date="2026-05-21">

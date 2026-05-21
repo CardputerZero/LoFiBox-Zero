@@ -56,6 +56,14 @@ app::AudioPlaybackState AudioPipelineController::state() const
     return app::AudioPlaybackState::Failed;
 }
 
+std::optional<double> AudioPipelineController::positionSeconds() const
+{
+    if (const auto* audio_backend = backend()) {
+        return audio_backend->positionSeconds();
+    }
+    return std::nullopt;
+}
+
 app::AudioVisualizationFrame AudioPipelineController::visualizationFrame() const
 {
     if (const auto* audio_backend = backend()) {

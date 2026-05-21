@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.2.4 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.5 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -34,10 +34,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(LOFIBOX_BUILD_DEVICE_DEFAULT ON)
 endif()
 
+set(LOFIBOX_BUILD_WEBUI_DEFAULT OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(LOFIBOX_BUILD_WEBUI_DEFAULT ON)
+endif()
+
 option(LOFIBOX_BUILD_DEVICE "Build the Linux framebuffer device target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_X11 "Build the Linux X11 VNC/PocketFrame target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_TUI "Build the ANSI terminal UI target." ON)
-option(LOFIBOX_BUILD_WEBUI "Build the WebUI remote-control HTTP/WebSocket server." OFF)
+option(LOFIBOX_BUILD_WEBUI "Build the WebUI remote-control HTTP/WebSocket server." ${LOFIBOX_BUILD_WEBUI_DEFAULT})
 
 add_library(lofibox_zero_core STATIC
     src/audio/audio_pipeline_controller.cpp

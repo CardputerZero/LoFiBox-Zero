@@ -3,13 +3,14 @@
 #include "playback/playback_runtime_coordinator.h"
 
 #include <algorithm>
+#include <cmath>
+#include <optional>
 #include <utility>
 
 namespace lofibox::app {
 namespace {
 
-constexpr double kFinishDurationGuardSeconds = 0.25;
-constexpr double kFinishConfirmationSeconds = 0.8;
+constexpr double kAcceptFinishRemainingSeconds = 1.5;
 
 void resetFinishPending(PlaybackSession& session) noexcept
 {
@@ -17,25 +18,37 @@ void resetFinishPending(PlaybackSession& session) noexcept
     session.finish_pending_seconds = 0.0;
 }
 
-bool deferEarlyFinish(PlaybackSession& session, int duration_seconds, double delta_seconds) noexcept
+bool deferEarlyFinish(
+    PlaybackSession& session,
+    int duration_seconds,
+    double delta_seconds,
+    std::optional<double> backend_position_seconds) noexcept
 {
     if (duration_seconds <= 0) {
         return false;
     }
 
     const double duration = static_cast<double>(duration_seconds);
-    const double guard_position = std::max(0.0, duration - kFinishDurationGuardSeconds);
-    if (!session.finish_pending && session.elapsed_seconds >= guard_position) {
+    double observed_elapsed = session.elapsed_seconds;
+    if (backend_position_seconds && std::isfinite(*backend_position_seconds)) {
+        observed_elapsed = std::max(0.0, *backend_position_seconds);
+    }
+    observed_elapsed = std::min(observed_elapsed, duration);
+
+    if (duration - observed_elapsed <= kAcceptFinishRemainingSeconds) {
+        session.elapsed_seconds = observed_elapsed;
         return false;
     }
 
     session.finish_pending = true;
     session.finish_pending_seconds += std::max(0.0, delta_seconds);
-    session.elapsed_seconds = std::min(
-        duration,
-        std::max(session.elapsed_seconds + std::max(0.0, delta_seconds), guard_position));
+    if (backend_position_seconds && std::isfinite(*backend_position_seconds)) {
+        session.elapsed_seconds = observed_elapsed;
+    } else if (session.status == PlaybackStatus::Playing) {
+        session.elapsed_seconds = std::min(duration, observed_elapsed + std::max(0.0, delta_seconds));
+    }
     session.visualization_frame = {};
-    return session.finish_pending_seconds < kFinishConfirmationSeconds;
+    return true;
 }
 
 } // namespace
@@ -164,9 +177,10 @@ void PlaybackRuntimeCoordinator::tick(
     const int duration_seconds = current_track ? current_track->duration_seconds : stream_duration_seconds;
     const auto duration = std::chrono::milliseconds{std::max(0, duration_seconds) * 1000};
     const auto backend_state = session.audio_active ? audio_pipeline_.state() : AudioPlaybackState::Idle;
+    const auto backend_position = session.audio_active ? audio_pipeline_.positionSeconds() : std::optional<double>{};
 
     if (session.audio_active && backend_state == AudioPlaybackState::Finished) {
-        if (deferEarlyFinish(session, duration_seconds, delta_seconds)) {
+        if (deferEarlyFinish(session, duration_seconds, delta_seconds, backend_position)) {
             return;
         }
         resetFinishPending(session);
@@ -205,7 +219,7 @@ void PlaybackRuntimeCoordinator::tick(
     const bool backend_progressing = session.audio_active && backend_state == AudioPlaybackState::Playing;
     if (backend_progressing) {
         resetFinishPending(session);
-        clock_.advance(session, delta_seconds);
+        clock_.advance(session, delta_seconds, backend_position);
     }
     const PlaybackStabilitySample stability_sample{
         std::chrono::milliseconds{static_cast<int>(session.elapsed_seconds * 1000.0)},

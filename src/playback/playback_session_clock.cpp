@@ -3,6 +3,7 @@
 #include "playback/playback_session_clock.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace lofibox::app {
 
@@ -17,6 +18,21 @@ void PlaybackSessionClock::advance(PlaybackSession& session, double delta_second
     if (session.status == PlaybackStatus::Playing) {
         session.elapsed_seconds += std::max(0.0, delta_seconds);
     }
+}
+
+void PlaybackSessionClock::advance(
+    PlaybackSession& session,
+    double delta_seconds,
+    std::optional<double> backend_position_seconds) const noexcept
+{
+    if (session.status != PlaybackStatus::Playing) {
+        return;
+    }
+    if (backend_position_seconds && std::isfinite(*backend_position_seconds)) {
+        session.elapsed_seconds = std::max(0.0, *backend_position_seconds);
+        return;
+    }
+    advance(session, delta_seconds);
 }
 
 void PlaybackSessionClock::clampToTrackDuration(PlaybackSession& session, const TrackRecord* track) const noexcept

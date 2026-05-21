@@ -553,8 +553,14 @@ Sec-WebSocket-Accept: <base64-sha1>
 ## 11. CMake
 
 ```cmake
-option(LOFIBOX_BUILD_WEBUI "Build the WebUI remote-control HTTP/WebSocket server." OFF)
+set(LOFIBOX_BUILD_WEBUI_DEFAULT OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(LOFIBOX_BUILD_WEBUI_DEFAULT ON)
+endif()
+option(LOFIBOX_BUILD_WEBUI "Build the WebUI remote-control HTTP/WebSocket server." ${LOFIBOX_BUILD_WEBUI_DEFAULT})
 ```
+
+Linux builds compile WebUI by default so default Linux CI configurations build `lofibox_webui` and run `lofibox_webui_smoke`. Non-Linux builds keep the default off because the current server implementation uses POSIX sockets.
 
 Library `lofibox_webui` (STATIC):
 - Source files: `webui_json.cpp`, `webui_config.cpp`, `webui_runtime_adapter.cpp`, `webui_projection.cpp`, `webui_static_assets.cpp`, `webui_http_router.cpp`, `webui_ws_runtime_stream.cpp`, `webui_server.cpp`
@@ -587,12 +593,14 @@ The define is NOT set on `lofibox_zero_core`. This is intentional — `lofibox_z
 
 WebUI construction is injected at runtime via a `std::function` callback, avoiding circular dependencies and ODR violations:
 
-1. `lofibox_zero_core` exposes `AppStarter = std::function<void(RuntimeCommandClient&)>`
-2. `LoFiBoxApp` constructor accepts `AppStarter on_start` — if non-null, calls it with the runtime client
-3. `device_main.cpp` / `x11_main.cpp` construct the `AppStarter` lambda (guarded by `#if defined(LOFIBOX_HAVE_WEBUI)`), which creates `WebUiRuntimeAdapter` + `WebUiServer` and calls `start()`
+1. `lofibox_zero_core` exposes `AppStarter = std::function<void(RuntimeCommandClient&, const AppServiceRegistry&)>`
+2. `LoFiBoxApp` constructor accepts `AppStarter on_start` — if non-null, calls it with the runtime client and app service registry
+3. `device_main.cpp` / `x11_main.cpp` construct the `AppStarter` lambda (guarded by `#if defined(LOFIBOX_HAVE_WEBUI)`), which creates `WebUiRuntimeAdapter` + `WebUiServer`, wires optional library providers from the app service registry, and calls `start()`
 4. The lambda captures WebUI objects in a `shared_ptr` to keep them alive for the app lifetime
 
 This eliminates the previous problem where `LOFIBOX_HAVE_WEBUI` was needed inside `lofibox_app.cpp` (part of `lofibox_zero_core`) but `lofibox_zero_core` could not link against `lofibox_webui` without creating a cycle.
+
+The same target-level composition writes the display endpoint into `RuntimeServices::ui.webui_url`. The GUI Settings projection may display this address when network status is online, but core application code must not depend on WebUI server types.
 
 ### Link Order
 

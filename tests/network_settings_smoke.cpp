@@ -40,6 +40,12 @@ public:
     mutable int load_count{0};
 };
 
+class AlwaysOnlineConnectivityProvider final : public lofibox::app::ConnectivityProvider {
+public:
+    [[nodiscard]] bool connected() const override { return true; }
+    [[nodiscard]] std::string displayName() const override { return "ONLINE"; }
+};
+
 struct TestRuntimeApp {
     explicit TestRuntimeApp(lofibox::app::RuntimeServices initial_services = {})
         : services(lofibox::app::withNullRuntimeServices(std::move(initial_services))),
@@ -90,6 +96,47 @@ int main()
     if (snapshot.visible_count != 7) {
         std::cerr << "Expected Settings rows to include one Remote Setup entry instead of leaking remote fields.\n";
         return 1;
+    }
+
+    {
+        lofibox::app::RuntimeServices webui_services{};
+        webui_services.connectivity.provider = std::make_shared<AlwaysOnlineConnectivityProvider>();
+        webui_services.ui.webui_url = "http://localhost:8765";
+        TestRuntimeApp webui_test_app{std::move(webui_services)};
+        auto& webui_app = webui_test_app.app;
+        webui_app.update();
+        for (int tick = 0; tick < 500; ++tick) {
+            webui_app.update();
+            if (webui_app.snapshot().library_ready) {
+                break;
+            }
+        }
+        webui_app.openSettingsPage();
+        auto webui_rows = webui_app.pageModel().rows;
+        if (webui_rows.size() != 8U
+            || webui_rows[5].first != "WEBUI"
+            || webui_rows[5].second != "http://localhost:8765"
+            || webui_rows[6].first != "REMOTE SETUP"
+            || webui_rows[7].first != "ABOUT") {
+            std::cerr << "Expected online Settings to show the configured WebUI address before Remote Setup.\n";
+            return 1;
+        }
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Down, "DOWN", '\0'});
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Down, "DOWN", '\0'});
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Down, "DOWN", '\0'});
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Down, "DOWN", '\0'});
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Down, "DOWN", '\0'});
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Enter, "OK", '\0'});
+        if (webui_app.snapshot().current_page != lofibox::app::AppPage::Settings) {
+            std::cerr << "Expected WebUI address row to remain read-only.\n";
+            return 1;
+        }
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Down, "DOWN", '\0'});
+        webui_app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Enter, "OK", '\0'});
+        if (webui_app.snapshot().current_page != lofibox::app::AppPage::RemoteSetup) {
+            std::cerr << "Expected Remote Setup to still open after the optional WebUI row shifts its index.\n";
+            return 1;
+        }
     }
 
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Enter, "OK", '\0'});

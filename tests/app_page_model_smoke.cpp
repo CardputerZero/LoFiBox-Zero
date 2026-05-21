@@ -23,6 +23,25 @@ int main()
         return 1;
     }
 
+    input.webui_url = "http://localhost:8765";
+    const auto webui_settings_model = lofibox::app::buildAppPageModel(input);
+    if (webui_settings_model.rows.size() != 8
+        || webui_settings_model.rows[5].first != "WEBUI"
+        || webui_settings_model.rows[5].second != "http://localhost:8765"
+        || webui_settings_model.rows[6].first != "REMOTE SETUP"
+        || webui_settings_model.rows[7].first != "ABOUT") {
+        std::cerr << "Expected Settings page model to expose WebUI address when online.\n";
+        return 1;
+    }
+    input.network_connected = false;
+    const auto offline_webui_settings_model = lofibox::app::buildAppPageModel(input);
+    if (offline_webui_settings_model.rows.size() != 7 || offline_webui_settings_model.rows[5].first != "REMOTE SETUP") {
+        std::cerr << "Expected Settings page model to hide WebUI address when network is offline.\n";
+        return 1;
+    }
+    input.network_connected = true;
+    input.webui_url.clear();
+
     input.page = lofibox::app::AppPage::Songs;
     input.library_title_override = "recently added";
     input.library_rows = std::vector<std::pair<std::string, std::string>>{{"Song A", "Artist A"}};

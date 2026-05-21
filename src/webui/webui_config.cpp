@@ -70,4 +70,16 @@ void parseWebUiFromArgs(int argc, char** argv, WebUiConfig& config)
     }
 }
 
+std::string displayUrlForWebUi(const WebUiConfig& config)
+{
+    std::string host = config.bind_address;
+    if (host.empty() || host == "0.0.0.0" || host == "::") {
+        host = "<device-ip>";
+    }
+    if (host == "127.0.0.1") {
+        host = "localhost";
+    }
+    return "http://" + host + ":" + std::to_string(config.port);
+}
+
 } // namespace lofibox::webui

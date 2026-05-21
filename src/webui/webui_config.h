@@ -31,4 +31,8 @@ void parseWebUiEnv(WebUiConfig& config);
 // advances past unrecognised tokens so interleaved flags work).
 void parseWebUiFromArgs(int argc, char** argv, WebUiConfig& config);
 
+// Returns a user-facing endpoint label for Settings. Wildcard binds are not a
+// connectable URL by themselves, so they are shown with a device-IP placeholder.
+[[nodiscard]] std::string displayUrlForWebUi(const WebUiConfig& config);
+
 } // namespace lofibox::webui

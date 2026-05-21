@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <string_view>
 
 namespace lofibox::app {
 namespace {
@@ -17,8 +18,14 @@ constexpr std::array<AppPage, 6> kMainMenuPages{
     AppPage::Equalizer,
     AppPage::Settings,
 };
-constexpr int kSettingsRemoteSetupIndex = 5;
-constexpr int kSettingsAboutIndex = 6;
+bool selectedSettingsRowIs(AppCommandTarget& target, int selected, std::string_view name)
+{
+    const auto model = target.pageModel();
+    if (selected < 0 || selected >= static_cast<int>(model.rows.size())) {
+        return false;
+    }
+    return model.rows[static_cast<std::size_t>(selected)].first == name;
+}
 
 void clampListSelection(AppCommandTarget& target)
 {
@@ -222,7 +229,7 @@ void commandConfirmListPage(AppCommandTarget& target)
         return;
     }
 
-    if (page == AppPage::Settings && selected == kSettingsRemoteSetupIndex) {
+    if (page == AppPage::Settings && selectedSettingsRowIs(target, selected, "REMOTE SETUP")) {
         (void)target.handleSettingsRemoteConfirm(selected);
         return;
     }
@@ -263,7 +270,7 @@ void commandConfirmListPage(AppCommandTarget& target)
         return;
     }
 
-    if (page == AppPage::Settings && selected == kSettingsAboutIndex) {
+    if (page == AppPage::Settings && selectedSettingsRowIs(target, selected, "ABOUT")) {
         commandPushPage(target, AppPage::About);
     }
 }

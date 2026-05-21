@@ -1,8 +1,18 @@
+lofibox (0.2.5-1) UNRELEASED; urgency=medium
+
+  * New upstream release 0.2.5.
+  * Gate automatic queue advance on playback position instead of trusting
+    early backend Finished states.
+  * Realtime-throttle local Linux PCM decoding and reduce local Linux
+    track-switch latency.
+  * Build WebUI by default on Linux and show its address in Settings while
+    network status is online.
+
+ -- LoFiBox contributors <maintainers@example.invalid>  Thu, 21 May 2026 20:15:00 +0800
+
 lofibox (0.2.4-1) UNRELEASED; urgency=medium
 
   * New upstream release 0.2.4.
-  * Guard automatic track advance against premature backend Finished states
-    when the known track duration has not reached the end of playback.
   * Collapse GUI/device playback-mode shortcuts to one cycle and label audio
     effects as REMIX MODE.
   * Treat standard Linux evdev direction key events as the only direction

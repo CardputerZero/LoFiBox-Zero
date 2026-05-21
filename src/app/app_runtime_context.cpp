@@ -579,6 +579,7 @@ AppPageModel AppRuntimeContext::pageModel() const
         state_.settings,
         state_.network.connected,
         state_.metadata_service.display_name,
+        services.runtimeServices().ui.webui_url,
         buildSourceManagerRows(state_.remote_profiles, remote::RemoteSourceRegistry{}.manifests()),
         page_rows.empty() ? std::optional<std::vector<std::pair<std::string, std::string>>>{} : std::make_optional(std::move(page_rows))});
 }

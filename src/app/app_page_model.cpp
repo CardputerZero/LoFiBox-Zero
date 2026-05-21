@@ -52,7 +52,8 @@ std::vector<std::pair<std::string, std::string>> settingsRows(const AppPageModel
         input.settings.sleep_timer_index,
         input.settings.backlight_index,
         true,
-        static_cast<int>(remote::RemoteSourceRegistry{}.manifests().size())});
+        static_cast<int>(remote::RemoteSourceRegistry{}.manifests().size()),
+        input.webui_url});
 }
 
 } // namespace

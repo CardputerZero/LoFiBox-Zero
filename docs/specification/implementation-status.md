@@ -237,11 +237,21 @@ This update records the post-0.2.2 fix for device/APPLaunch starts where the pro
 - Direct CLI local-root add/remove/enable/disable commands now best-effort request runtime `LibraryRefresh`, letting a running GUI reload durable enabled roots immediately after the durable source-profile mutation.
 - Smoke coverage now includes effective-user home fallback when `HOME` is unset and GUI startup from persisted local-root profiles with no explicit diagnostic roots.
 
+## 2026-05-21 Playback Completion And Switch Latency Fix (0.2.5)
+
+This update records the post-0.2.4 playback completion and local Linux switch-latency fix for the 0.2.5 patch line:
+
+- Automatic queue advance no longer trusts `AudioPlaybackState::Finished` alone when a known duration exists. Early backend Finished states keep the current item active until the playback clock is within the accepted remaining-duration threshold.
+- Linux local PCM decoding is realtime-throttled to reduce sink-buffer drain races.
+- Local Linux track switching no longer waits synchronously for the old realtime PCM worker to join before starting the next track, and local PCM startup no longer blocks the playback command on a two-second output-confirmation window plus retry.
+- Local track playback starts the backend before refreshing local metadata/artwork so slow metadata or embedded-artwork reads do not delay audio process startup.
+- Linux builds compile the WebUI target by default, keeping CI's default Linux configure path on WebUI smoke coverage.
+- Settings projects the configured WebUI address only when network status is online, and the value scrolls inside the normal bounded value column instead of widening the row.
+
 ## 2026-05-21 Playback And Input Semantics Fix (0.2.4)
 
 This update records the post-0.2.3 playback/input convergence for the 0.2.4 patch line:
 
-- Automatic queue advance no longer trusts `AudioPlaybackState::Finished` alone when a known duration exists. Early backend Finished states enter a short pending-finish window and project the UI clock near the end before the next track can start.
 - Main Menu `F6` and Now Playing Up/Down now share the same playback-mode cycle: order -> shuffle -> repeat all -> repeat one -> order. `F7` and `F8` are no longer primary GUI/device playback-mode shortcuts.
 - Linux evdev keyboard handling now treats standard `EV_KEY` codes as the input truth: only `KEY_UP`, `KEY_DOWN`, `KEY_LEFT`, and `KEY_RIGHT` become direction commands, while ordinary letter keys remain character input.
-- Smoke coverage now includes finish-guarded playback completion, unified playback-mode shortcut routing, and Linux evdev direction/letter-key separation.
+- Smoke coverage now includes unified playback-mode shortcut routing and Linux evdev direction/letter-key separation.

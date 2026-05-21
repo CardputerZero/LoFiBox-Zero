@@ -3,6 +3,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <string>
 
 #include "app/audio_visualization.h"
@@ -22,6 +23,7 @@ public:
     void stop() noexcept;
 
     [[nodiscard]] app::AudioPlaybackState state() const;
+    [[nodiscard]] std::optional<double> positionSeconds() const;
     [[nodiscard]] app::AudioVisualizationFrame visualizationFrame() const;
     void setDspProfile(dsp::DspChainProfile profile);
     [[nodiscard]] const dsp::DspChainProfile& dspProfile() const noexcept;

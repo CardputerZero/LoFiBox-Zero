@@ -21,6 +21,7 @@ struct AppPageModelInput {
     SettingsState settings{};
     bool network_connected{false};
     std::string metadata_display_name{};
+    std::string webui_url{};
     std::optional<std::vector<std::pair<std::string, std::string>>> source_manager_rows{};
     std::optional<std::vector<std::pair<std::string, std::string>>> page_rows{};
 };

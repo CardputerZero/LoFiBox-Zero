@@ -26,7 +26,7 @@
 - `STATE_SETTINGS_READY`
   settings list is interactive with one selected row
 
-The current `Settings` page `MUST` contain exactly these rows, in this order:
+The current `Settings` page `MUST` contain these base rows, in this order:
 
 1. `Network`
 2. `Metadata Service`
@@ -36,10 +36,12 @@ The current `Settings` page `MUST` contain exactly these rows, in this order:
 6. `Remote Setup`
 7. `About`
 
+When WebUI is enabled and network status is online, `Settings` `MUST` insert a read-only `WebUI` row between `Language` and `Remote Setup`. The row value is the user-facing WebUI address. Long addresses `MUST` remain in the normal bounded value column and scroll inside that range rather than widening the row layout.
+
 ## 6. Required Elements
 
 - page title
-- seven settings rows
+- seven base settings rows, plus the conditional WebUI address row when WebUI is enabled and network status is online
 - truthful current values when values are shown
 - clear chevron or equivalent affordance on rows that navigate deeper
 
@@ -62,6 +64,7 @@ The current `Settings` page `MUST` contain exactly these rows, in this order:
 - `STATE_SETTINGS_READY + EVT_NAV_DOWN [guard: selection is not last row]` -> effect: move selection down -> `STATE_SETTINGS_READY`
 - `STATE_SETTINGS_READY + EVT_CONFIRM [guard: selected row = Network]` -> effect: no-op because connectivity is system-managed and read-only in the current implementation -> `STATE_SETTINGS_READY`
 - `STATE_SETTINGS_READY + EVT_CONFIRM [guard: selected row = Metadata Service]` -> effect: no-op because service is read-only in the current implementation -> `STATE_SETTINGS_READY`
+- `STATE_SETTINGS_READY + EVT_CONFIRM [guard: selected row = WebUI]` -> effect: no-op because the WebUI address is read-only in the current implementation -> `STATE_SETTINGS_READY`
 - `STATE_SETTINGS_READY + EVT_CONFIRM [guard: selected row = Remote Setup]` -> effect: open the Remote Setup page that lists supported remote source kinds -> `Remote Setup`
 - `STATE_SETTINGS_READY + EVT_CONFIRM [guard: selected row = About]` -> effect: open about page -> `About`
 - `STATE_SETTINGS_READY + EVT_CONFIRM [guard: selected row is not About]` -> effect: perform row's truthful current behavior or no-op -> `STATE_SETTINGS_READY`

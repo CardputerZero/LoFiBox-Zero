@@ -3,6 +3,7 @@
 #include "ui/pages/list_page.h"
 
 #include <algorithm>
+#include <chrono>
 
 #include "ui/ui_primitives.h"
 #include "core/display_profile.h"
@@ -38,7 +39,25 @@ void drawListRowAt(
 
     ::lofibox::ui::drawText(canvas, ::lofibox::ui::fitUpper(primary, 22), theme.spacing.list_inset + 6, y + 6, primary_color, 1);
     if (!secondary.empty()) {
-        ::lofibox::ui::drawText(canvas, ::lofibox::ui::fitUpper(secondary, 10), core::kDisplayWidth - 86, y + 6, secondary_color, 1);
+        if (primary == "WEBUI") {
+            constexpr int window_x = core::kDisplayWidth - 112;
+            constexpr int window_width = 98;
+            const int scroll_px = static_cast<int>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch())
+                    .count()
+                / 45);
+            ::lofibox::ui::drawFadedTextWindow(
+                canvas,
+                ::lofibox::ui::upperText(secondary),
+                window_x,
+                y + 6,
+                window_width,
+                scroll_px,
+                secondary_color);
+        } else {
+            ::lofibox::ui::drawText(canvas, ::lofibox::ui::fitUpper(secondary, 10), core::kDisplayWidth - 86, y + 6, secondary_color, 1);
+        }
     }
 }
 
