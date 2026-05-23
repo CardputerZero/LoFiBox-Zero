@@ -27,6 +27,62 @@ case "$0" in
     *) script_dir=/usr/lib/lofibox ;;
 esac
 
+: "${LOFIBOX_WEBUI:=1}"
+: "${LOFIBOX_WEBUI_BIND:=0.0.0.0}"
+: "${LOFIBOX_WEBUI_PORT:=8765}"
+export LOFIBOX_WEBUI LOFIBOX_WEBUI_BIND LOFIBOX_WEBUI_PORT
+
+backend=${LOFIBOX_DISPLAY_BACKEND:-auto}
+
+case "$backend" in
+    wayland|labwc)
+        if command -v lofibox-wayland >/dev/null 2>&1; then
+            exec lofibox-wayland "$@"
+        fi
+        if command -v lofibox >/dev/null 2>&1; then
+            exec lofibox "$@"
+        fi
+        echo "lofibox-applaunch: native Wayland runtime is not installed" >&2
+        exit 127
+        ;;
+    x11|xwayland)
+        if command -v lofibox-x11 >/dev/null 2>&1; then
+            exec lofibox-x11 "$@"
+        fi
+        if command -v lofibox >/dev/null 2>&1; then
+            exec lofibox "$@"
+        fi
+        echo "lofibox-applaunch: X11 runtime is not installed" >&2
+        exit 127
+        ;;
+    fb|fbdev|framebuffer|device)
+        ;;
+    auto|"")
+        if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+            if command -v lofibox-wayland >/dev/null 2>&1; then
+                exec lofibox-wayland "$@"
+            fi
+        fi
+        if [ -n "${DISPLAY:-}" ]; then
+            if command -v lofibox-x11 >/dev/null 2>&1; then
+                exec lofibox-x11 "$@"
+            fi
+        fi
+        ;;
+    *)
+        echo "lofibox-applaunch: unsupported LOFIBOX_DISPLAY_BACKEND=$backend" >&2
+        exit 2
+        ;;
+esac
+
+if [ "$backend" = "auto" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    echo "lofibox-applaunch: Wayland session is active but native runtime is not installed; falling back to framebuffer" >&2
+fi
+
+if [ "$backend" = "auto" ] && [ -n "${DISPLAY:-}" ]; then
+    echo "lofibox-applaunch: X11 session is active but desktop runtime is not installed; falling back to framebuffer" >&2
+fi
+
 if [ -z "${LOFIBOX_FBDEV:-}" ]; then
     if [ -n "${APPLAUNCH_LINUX_FBDEV_DEVICE:-}" ]; then
         LOFIBOX_FBDEV=$APPLAUNCH_LINUX_FBDEV_DEVICE

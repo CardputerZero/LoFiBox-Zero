@@ -21,6 +21,11 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.7" date="2026-05-23">
+      <description>
+        <p>Adds a native Wayland runtime for compositor-managed Cardputer Zero sessions, keeps framebuffer compatibility for legacy APPLaunch launches, enables the appliance WebUI by default from the Cardputer wrapper, and shows the started WebUI address in Settings even when the host connectivity probe is offline.</p>
+      </description>
+    </release>
     <release version="0.2.6" date="2026-05-22">
       <description>
         <p>Fixes Linux PCM decoder and sink child-process exit handling so early adapter or decode-path ends pause the current track instead of being interpreted as normal queue completion, and verifies default Linux WebUI smoke coverage in CI.</p>

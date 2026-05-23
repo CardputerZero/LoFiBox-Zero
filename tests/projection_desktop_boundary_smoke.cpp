@@ -24,7 +24,7 @@ int main()
         || settings_rows[6].first != "REMOTE SETUP"
         || settings_rows[6].second != "15 TYPES"
         || settings_rows[7].first != "ABOUT") {
-        std::cerr << "Expected Settings projection rows to expose WebUI address before Remote Setup when online.\n";
+        std::cerr << "Expected Settings projection rows to expose the started WebUI address before Remote Setup.\n";
         return 1;
     }
 

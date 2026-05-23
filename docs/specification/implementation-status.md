@@ -253,7 +253,8 @@ This update records the post-0.2.4 playback completion and local Linux switch-la
 - Local Linux track switching no longer waits synchronously for the old realtime PCM worker to join before starting the next track, and local PCM startup no longer blocks the playback command on a two-second output-confirmation window plus retry.
 - Local track playback starts the backend before refreshing local metadata/artwork so slow metadata or embedded-artwork reads do not delay audio process startup.
 - Linux builds compile the WebUI target by default, keeping CI's default Linux configure path on WebUI smoke coverage.
-- Settings projects the configured WebUI address only when network status is online, and the value scrolls inside the normal bounded value column instead of widening the row.
+- Settings projects the configured WebUI address when the WebUI runtime has started, and the value scrolls inside the normal bounded value column instead of widening the row. The row is no longer hidden solely because the host connectivity probe reports offline.
+- Cardputer Zero APPLaunch starts are the appliance launch profile and default `LOFIBOX_WEBUI=1`, `LOFIBOX_WEBUI_BIND=0.0.0.0`, and `LOFIBOX_WEBUI_PORT=8765` while preserving explicit caller overrides.
 
 ## 2026-05-21 Playback And Input Semantics Fix (0.2.4)
 

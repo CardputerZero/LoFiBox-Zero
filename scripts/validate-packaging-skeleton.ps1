@@ -35,6 +35,7 @@ cmake -S . -B build/container-install-skeleton -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DLOFIBOX_BUILD_DEVICE=OFF \
   -DLOFIBOX_BUILD_X11=OFF \
+  -DLOFIBOX_BUILD_WAYLAND=OFF \
   -DBUILD_TESTING=OFF
 
 cmake --build build/container-install-skeleton --target lofibox_zero_tui_bin

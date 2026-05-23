@@ -136,6 +136,7 @@ docker "${RUN_ARGS[@]}" "$IMAGE_TAG" bash -lc '
   cmake -S . -B "$LOFIBOX_CONTAINER_BUILD_DIR" -G Ninja \
     -DCMAKE_BUILD_TYPE="$LOFIBOX_CONTAINER_BUILD_TYPE" \
     -DLOFIBOX_BUILD_DEVICE=ON \
+    -DLOFIBOX_BUILD_WAYLAND=OFF \
     -DBUILD_TESTING=OFF
   cmake --build "$LOFIBOX_CONTAINER_BUILD_DIR" --target lofibox_zero_device --config "$LOFIBOX_CONTAINER_BUILD_TYPE"
   if [[ "${DEV_CONTAINER_MODE:-build}" == "build" ]]; then

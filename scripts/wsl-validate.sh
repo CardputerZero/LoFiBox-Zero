@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_TYPE="${BUILD_TYPE:-Debug}"
 TEST_BUILD_DIR="${WSL_TEST_BUILD_DIR:-$ROOT_DIR/build/wsl/test}"
 DEVICE_BUILD_DIR="${WSL_DEVICE_BUILD_DIR:-$ROOT_DIR/build/wsl/device}"
+WAYLAND_BUILD_DIR="${WSL_WAYLAND_BUILD_DIR:-$ROOT_DIR/build/wsl/wayland}"
 
 require_command() {
   local command_name="$1"
@@ -32,9 +33,10 @@ fi
 require_command cmake
 require_command ctest
 require_command git
+require_command wayland-scanner
 
 if command -v pkg-config >/dev/null 2>&1; then
-  REQUIRED_PKGCONFIG_MODULES=(xkbcommon)
+  REQUIRED_PKGCONFIG_MODULES=(xkbcommon wayland-client wayland-protocols)
 
   MISSING_MODULES=()
   for module_name in "${REQUIRED_PKGCONFIG_MODULES[@]}"; do
@@ -54,23 +56,37 @@ fi
 print_step "Configuring shared Linux tests into $TEST_BUILD_DIR"
 cmake -S "$ROOT_DIR" -B "$TEST_BUILD_DIR" "${GENERATOR_ARGS[@]}" \
   -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-  -DLOFIBOX_BUILD_DEVICE=OFF
+  -DLOFIBOX_BUILD_DEVICE=OFF \
+  -DLOFIBOX_BUILD_WAYLAND=OFF
 
-print_step "Building shared Linux tests"
-cmake --build "$TEST_BUILD_DIR" --target hello_app_smoke --config "$BUILD_TYPE"
+print_step "Building shared Linux smoke test"
+cmake --build "$TEST_BUILD_DIR" --target lofibox_app_smoke --config "$BUILD_TYPE"
 
-print_step "Running shared Linux tests"
-ctest --test-dir "$TEST_BUILD_DIR" --build-config "$BUILD_TYPE" --output-on-failure
+print_step "Running shared Linux smoke test"
+ctest --test-dir "$TEST_BUILD_DIR" --build-config "$BUILD_TYPE" --output-on-failure -R '^lofibox_app_smoke$'
 
 print_step "Configuring Linux device target into $DEVICE_BUILD_DIR"
 cmake -S "$ROOT_DIR" -B "$DEVICE_BUILD_DIR" "${GENERATOR_ARGS[@]}" \
   -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
   -DLOFIBOX_BUILD_DEVICE=ON \
+  -DLOFIBOX_BUILD_WAYLAND=OFF \
   -DBUILD_TESTING=OFF
 
 print_step "Building Linux device target"
 cmake --build "$DEVICE_BUILD_DIR" --target lofibox_zero_device --config "$BUILD_TYPE"
 
+print_step "Configuring Linux Wayland target into $WAYLAND_BUILD_DIR"
+cmake -S "$ROOT_DIR" -B "$WAYLAND_BUILD_DIR" "${GENERATOR_ARGS[@]}" \
+  -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+  -DLOFIBOX_BUILD_DEVICE=OFF \
+  -DLOFIBOX_BUILD_X11=OFF \
+  -DLOFIBOX_BUILD_WAYLAND=ON \
+  -DBUILD_TESTING=OFF
+
+print_step "Building Linux Wayland target"
+cmake --build "$WAYLAND_BUILD_DIR" --target lofibox_zero_wayland --config "$BUILD_TYPE"
+
 printf '\nWSL validation completed successfully.\n'
 printf '  Tests build dir: %s\n' "$TEST_BUILD_DIR"
 printf '  Device build dir: %s\n' "$DEVICE_BUILD_DIR"
+printf '  Wayland build dir: %s\n' "$WAYLAND_BUILD_DIR"

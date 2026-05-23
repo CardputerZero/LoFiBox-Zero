@@ -7,6 +7,18 @@ All notable changes to LoFiBox Zero will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] - 2026-05-23
+
+### Added
+- Added a native Wayland desktop-widget target (`lofibox_zero_wayland`) for compositor-managed Cardputer Zero sessions while retaining the framebuffer device target for legacy APPLaunch launches.
+
+### Changed
+- Cardputer Zero APPLaunch metadata now declares the native Wayland display contract and the installed wrapper chooses Wayland, X11, or framebuffer at runtime from the session environment.
+- Cardputer Zero APPLaunch launches now enable the LoFiBox WebUI by default so Settings can show the device WebUI address in both Wayland and framebuffer sessions.
+
+### Fixed
+- Settings now shows the started WebUI address even if the host connectivity probe is offline, avoiding a false "WebUI missing" state when the local service is already running.
+
 ## [0.2.6] - 2026-05-22
 
 ### Changed

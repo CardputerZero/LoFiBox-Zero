@@ -2,6 +2,8 @@
 set -eu
 
 test -x /usr/bin/lofibox
+test -x /usr/bin/lofibox-wayland
+test -x /usr/bin/lofibox-x11
 test -x /usr/bin/lofibox-tui
 test -f /usr/share/applications/io.github.vicliu624.lofibox.desktop
 test -f /usr/share/metainfo/io.github.vicliu624.lofibox.metainfo.xml
@@ -14,6 +16,10 @@ PY
 
 lofibox --help >/dev/null
 lofibox --version >/dev/null
+lofibox-wayland --help >/dev/null
+lofibox-wayland --version >/dev/null
+lofibox-x11 --help >/dev/null
+lofibox-x11 --version >/dev/null
 lofibox-tui --help >/dev/null
 
 desktop-file-validate /usr/share/applications/io.github.vicliu624.lofibox.desktop

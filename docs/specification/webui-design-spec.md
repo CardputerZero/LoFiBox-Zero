@@ -571,13 +571,19 @@ Library `lofibox_webui` (STATIC):
 
 ### Compile-Time Guard
 
-`LOFIBOX_HAVE_WEBUI=1` is defined **PRIVATE** on the two executable targets that construct the WebUI callback:
+`LOFIBOX_HAVE_WEBUI=1` is defined **PRIVATE** on the executable targets that construct the WebUI callback:
 
 ```cmake
 # lofibox_zero_x11 (X11 desktop target)
 if(TARGET lofibox_webui)
     target_link_libraries(lofibox_zero_x11 PRIVATE lofibox_zero_core lofibox_webui)
     target_compile_definitions(lofibox_zero_x11 PRIVATE LOFIBOX_HAVE_WEBUI=1)
+endif()
+
+# lofibox_zero_wayland (native Wayland desktop target)
+if(TARGET lofibox_webui)
+    target_link_libraries(lofibox_zero_wayland PRIVATE lofibox_zero_core lofibox_webui)
+    target_compile_definitions(lofibox_zero_wayland PRIVATE LOFIBOX_HAVE_WEBUI=1)
 endif()
 
 # lofibox_zero_device (framebuffer target)
@@ -600,7 +606,7 @@ WebUI construction is injected at runtime via a `std::function` callback, avoidi
 
 This eliminates the previous problem where `LOFIBOX_HAVE_WEBUI` was needed inside `lofibox_app.cpp` (part of `lofibox_zero_core`) but `lofibox_zero_core` could not link against `lofibox_webui` without creating a cycle.
 
-The same target-level composition writes the display endpoint into `RuntimeServices::ui.webui_url`. The GUI Settings projection may display this address when network status is online, but core application code must not depend on WebUI server types.
+The same target-level composition writes the display endpoint into `RuntimeServices::ui.webui_url`. The GUI Settings projection may display this address when the WebUI runtime has started, but core application code must not depend on WebUI server types. The WebUI row is based on service startup state, not on the host connectivity probe; local WebUI address visibility remains useful even when broader network connectivity is offline.
 
 ### Link Order
 

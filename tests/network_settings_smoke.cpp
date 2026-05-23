@@ -139,6 +139,29 @@ int main()
         }
     }
 
+    {
+        lofibox::app::RuntimeServices webui_services{};
+        webui_services.ui.webui_url = "http://<device-ip>:8765";
+        TestRuntimeApp webui_test_app{std::move(webui_services)};
+        auto& webui_app = webui_test_app.app;
+        webui_app.update();
+        for (int tick = 0; tick < 500; ++tick) {
+            webui_app.update();
+            if (webui_app.snapshot().library_ready) {
+                break;
+            }
+        }
+        webui_app.openSettingsPage();
+        auto webui_rows = webui_app.pageModel().rows;
+        if (webui_rows.size() != 8U
+            || webui_rows[0].second != "OFFLINE"
+            || webui_rows[5].first != "WEBUI"
+            || webui_rows[5].second != "http://<device-ip>:8765") {
+            std::cerr << "Expected Settings to show the started WebUI address even when the network probe is offline.\n";
+            return 1;
+        }
+    }
+
     app.handleInput(lofibox::app::InputEvent{lofibox::app::InputKey::Enter, "OK", '\0'});
     snapshot = app.snapshot();
     if (snapshot.current_page != lofibox::app::AppPage::Settings) {

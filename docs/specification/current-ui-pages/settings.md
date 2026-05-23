@@ -36,12 +36,14 @@ The current `Settings` page `MUST` contain these base rows, in this order:
 6. `Remote Setup`
 7. `About`
 
-When WebUI is enabled and network status is online, `Settings` `MUST` insert a read-only `WebUI` row between `Language` and `Remote Setup`. The row value is the user-facing WebUI address. Long addresses `MUST` remain in the normal bounded value column and scroll inside that range rather than widening the row layout.
+When WebUI is enabled and the runtime has a WebUI address, `Settings` `MUST` insert a read-only `WebUI` row between `Language` and `Remote Setup`. The row value is the user-facing WebUI address. Long addresses `MUST` remain in the normal bounded value column and scroll inside that range rather than widening the row layout.
+
+The `WebUI` row reflects the local LoFiBox WebUI service state, not whether the host connectivity probe currently reports internet access. If the WebUI server has started, the address remains useful diagnostic information even while `Network` reads `OFFLINE`.
 
 ## 6. Required Elements
 
 - page title
-- seven base settings rows, plus the conditional WebUI address row when WebUI is enabled and network status is online
+- seven base settings rows, plus the conditional WebUI address row when WebUI is enabled
 - truthful current values when values are shown
 - clear chevron or equivalent affordance on rows that navigate deeper
 

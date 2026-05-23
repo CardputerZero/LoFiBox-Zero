@@ -1,3 +1,17 @@
+lofibox (0.2.7-1) UNRELEASED; urgency=medium
+
+  * New upstream release 0.2.7.
+  * Add a native Wayland desktop-widget target for compositor-managed
+    Cardputer Zero sessions while retaining the framebuffer target for
+    legacy APPLaunch launches.
+  * Let the Cardputer Zero APPLaunch wrapper choose Wayland, X11, or
+    framebuffer at runtime and enable the LoFiBox WebUI by default for the
+    appliance launch profile.
+  * Show the started WebUI address in Settings even when the host
+    connectivity probe reports offline.
+
+ -- LoFiBox contributors <maintainers@example.invalid>  Sat, 23 May 2026 00:00:00 +0800
+
 lofibox (0.2.6-1) UNRELEASED; urgency=medium
 
   * New upstream release 0.2.6.

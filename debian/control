@@ -6,9 +6,12 @@ Build-Depends:
  cmake,
  debhelper-compat (= 13),
  libfreetype-dev,
+ libwayland-bin,
+ libwayland-dev,
  libx11-dev,
  libxkbcommon-dev,
- pkgconf
+ pkgconf,
+ wayland-protocols
 Standards-Version: 4.7.0
 Homepage: https://github.com/vicliu624/LoFiBox-Zero
 Vcs-Browser: https://github.com/vicliu624/LoFiBox-Zero

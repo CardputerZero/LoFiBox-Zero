@@ -44,6 +44,9 @@ jobs:
             lintian \
             ninja-build \
             libfreetype6-dev \
+            libwayland-bin \
+            libwayland-dev \
+            wayland-protocols \
             libxkbcommon-dev \
             libx11-dev \
             pkgconf
@@ -68,6 +71,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DLOFIBOX_BUILD_DEVICE=OFF
           -DLOFIBOX_BUILD_X11=OFF
+          -DLOFIBOX_BUILD_WAYLAND=OFF
           -DBUILD_TESTING=OFF
 
       - name: Build Linux Install Skeleton Binaries
@@ -96,6 +100,12 @@ jobs:
       - name: Build Linux Device Target
         run: cmake --build --preset linux-device-debug-build
 
+      - name: Configure Linux Wayland Target
+        run: cmake --preset linux-wayland-debug
+
+      - name: Build Linux Wayland Target
+        run: cmake --build --preset linux-wayland-debug-build
+
       - name: Build Debian Package
         run: |
           sudo apt-get build-dep -y .
@@ -112,6 +122,8 @@ jobs:
       - name: Verify Debian Package ABI Baseline
         run: |
           test -f "$DEB_PACKAGE"
+          dpkg-deb -c "$DEB_PACKAGE" | tee /tmp/lofibox-package-contents.txt
+          grep -F "./usr/bin/lofibox-wayland" /tmp/lofibox-package-contents.txt
           dpkg-deb -f "$DEB_PACKAGE" Depends
           dpkg-deb -f "$DEB_PACKAGE" Depends | tee /tmp/lofibox-depends.txt
           if grep -E 'libc6 \(>= 2\.(3[8-9]|[4-9][0-9])' /tmp/lofibox-depends.txt; then

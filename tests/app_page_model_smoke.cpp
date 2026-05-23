@@ -30,13 +30,15 @@ int main()
         || webui_settings_model.rows[5].second != "http://localhost:8765"
         || webui_settings_model.rows[6].first != "REMOTE SETUP"
         || webui_settings_model.rows[7].first != "ABOUT") {
-        std::cerr << "Expected Settings page model to expose WebUI address when online.\n";
+        std::cerr << "Expected Settings page model to expose the started WebUI address.\n";
         return 1;
     }
     input.network_connected = false;
     const auto offline_webui_settings_model = lofibox::app::buildAppPageModel(input);
-    if (offline_webui_settings_model.rows.size() != 7 || offline_webui_settings_model.rows[5].first != "REMOTE SETUP") {
-        std::cerr << "Expected Settings page model to hide WebUI address when network is offline.\n";
+    if (offline_webui_settings_model.rows.size() != 8
+        || offline_webui_settings_model.rows[0].second != "OFFLINE"
+        || offline_webui_settings_model.rows[5].first != "WEBUI") {
+        std::cerr << "Expected Settings page model to keep showing the local WebUI address even when connectivity is offline.\n";
         return 1;
     }
     input.network_connected = true;

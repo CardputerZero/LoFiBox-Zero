@@ -100,10 +100,41 @@ int main()
             std::cerr << "Expected Cardputer APPLaunch metadata to use the APPLaunch-relative icon path.\n";
             return 1;
         }
+        if (!hasLine(desktop, "StartupWMClass=lofibox")) {
+            std::cerr << "Expected Cardputer APPLaunch metadata to expose a stable window class for task matching.\n";
+            return 1;
+        }
+        if (!hasLine(desktop, "X-Zero-AppId=io.github.vicliu624.lofibox")) {
+            std::cerr << "Expected Cardputer APPLaunch metadata to expose the LoFiBox Wayland app id.\n";
+            return 1;
+        }
+        if (!hasLine(desktop, "X-Zero-Display=wayland")) {
+            std::cerr << "Expected Cardputer APPLaunch metadata to declare the native Wayland runtime.\n";
+            return 1;
+        }
 
         const auto wrapper = readTextFile(wrapper_file);
         if (!hasLine(wrapper, "find_st7789v_fbdev()")) {
             std::cerr << "Expected Cardputer APPLaunch wrapper to be able to detect the ST7789V framebuffer.\n";
+            return 1;
+        }
+        if (!hasLine(wrapper, ": \"${LOFIBOX_WEBUI:=1}\"")
+            || !hasLine(wrapper, ": \"${LOFIBOX_WEBUI_BIND:=0.0.0.0}\"")
+            || !hasLine(wrapper, ": \"${LOFIBOX_WEBUI_PORT:=8765}\"")
+            || !hasLine(wrapper, "export LOFIBOX_WEBUI LOFIBOX_WEBUI_BIND LOFIBOX_WEBUI_PORT")) {
+            std::cerr << "Expected Cardputer APPLaunch wrapper to enable the appliance WebUI by default.\n";
+            return 1;
+        }
+        if (!hasLine(wrapper, "    wayland|labwc)")) {
+            std::cerr << "Expected Cardputer APPLaunch wrapper to support an explicit Wayland backend.\n";
+            return 1;
+        }
+        if (!hasLine(wrapper, "    fb|fbdev|framebuffer|device)")) {
+            std::cerr << "Expected Cardputer APPLaunch wrapper to support an explicit framebuffer backend.\n";
+            return 1;
+        }
+        if (!hasLine(wrapper, "            exec lofibox-wayland \"$@\"")) {
+            std::cerr << "Expected Cardputer APPLaunch wrapper to start the native desktop runtime in Wayland sessions.\n";
             return 1;
         }
         if (!hasLine(wrapper, "            *fb_st7789v*)")) {

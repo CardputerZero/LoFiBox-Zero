@@ -11,3 +11,6 @@ Terminal=false
 Categories=AudioVideo;Audio;Player;Music;
 Keywords=music;audio;player;lofi;
 StartupNotify=true
+StartupWMClass=lofibox
+X-Zero-AppId=io.github.vicliu624.lofibox
+X-Zero-Display=wayland

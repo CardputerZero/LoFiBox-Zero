@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(LoFiBoxZero VERSION 0.2.6 LANGUAGES C CXX)
+project(LoFiBoxZero VERSION 0.2.7 LANGUAGES C CXX)
 
 if(DEFINED CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
     set(_lofibox_cmake_export_no_package_registry "${CMAKE_EXPORT_NO_PACKAGE_REGISTRY}")
@@ -41,6 +41,7 @@ endif()
 
 option(LOFIBOX_BUILD_DEVICE "Build the Linux framebuffer device target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_X11 "Build the Linux X11 VNC/PocketFrame target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
+option(LOFIBOX_BUILD_WAYLAND "Build the Linux native Wayland desktop-widget target." ${LOFIBOX_BUILD_DEVICE_DEFAULT})
 option(LOFIBOX_BUILD_TUI "Build the ANSI terminal UI target." ON)
 option(LOFIBOX_BUILD_WEBUI "Build the WebUI remote-control HTTP/WebSocket server." ${LOFIBOX_BUILD_WEBUI_DEFAULT})
 
@@ -326,7 +327,7 @@ if(LOFIBOX_BUILD_X11)
         src/platform/x11/x11_presenter.cpp
         src/targets/x11_main.cpp
     )
-    set_target_properties(lofibox_zero_x11 PROPERTIES OUTPUT_NAME lofibox)
+    set_target_properties(lofibox_zero_x11 PROPERTIES OUTPUT_NAME lofibox-x11)
     target_link_libraries(lofibox_zero_x11 PRIVATE
         lofibox_zero_host_runtime
         lofibox_zero_target_cli
@@ -341,6 +342,106 @@ if(LOFIBOX_BUILD_X11)
         target_compile_definitions(lofibox_zero_x11 PRIVATE LOFIBOX_HAVE_WEBUI=1)
     endif()
     install(TARGETS lofibox_zero_x11
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    )
+endif()
+
+if(LOFIBOX_BUILD_WAYLAND)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "LOFIBOX_BUILD_WAYLAND requires a Linux target environment.")
+    endif()
+
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client)
+    pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+    pkg_check_modules(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
+    find_program(WAYLAND_SCANNER_EXECUTABLE wayland-scanner REQUIRED)
+
+    pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+    set(LOFIBOX_XDG_SHELL_XML "${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml")
+    if(NOT EXISTS "${LOFIBOX_XDG_SHELL_XML}")
+        message(FATAL_ERROR "xdg-shell.xml not found at ${LOFIBOX_XDG_SHELL_XML}")
+    endif()
+
+    set(LOFIBOX_WAYLAND_PROTOCOL_DIR "${CMAKE_BINARY_DIR}/generated/wayland")
+    set(LOFIBOX_XDG_SHELL_HEADER "${LOFIBOX_WAYLAND_PROTOCOL_DIR}/xdg-shell-client-protocol.h")
+    set(LOFIBOX_XDG_SHELL_SOURCE "${LOFIBOX_WAYLAND_PROTOCOL_DIR}/xdg-shell-protocol.c")
+    set(LOFIBOX_XDG_DECORATION_XML "${WAYLAND_PROTOCOLS_DIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml")
+    set(LOFIBOX_XDG_DECORATION_HEADER "${LOFIBOX_WAYLAND_PROTOCOL_DIR}/xdg-decoration-unstable-v1-client-protocol.h")
+    set(LOFIBOX_XDG_DECORATION_SOURCE "${LOFIBOX_WAYLAND_PROTOCOL_DIR}/xdg-decoration-unstable-v1-protocol.c")
+    file(MAKE_DIRECTORY "${LOFIBOX_WAYLAND_PROTOCOL_DIR}")
+
+    if(NOT EXISTS "${LOFIBOX_XDG_DECORATION_XML}")
+        message(FATAL_ERROR "xdg-decoration-unstable-v1.xml not found at ${LOFIBOX_XDG_DECORATION_XML}")
+    endif()
+
+    add_custom_command(
+        OUTPUT "${LOFIBOX_XDG_SHELL_HEADER}"
+        COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header
+                "${LOFIBOX_XDG_SHELL_XML}"
+                "${LOFIBOX_XDG_SHELL_HEADER}"
+        DEPENDS "${LOFIBOX_XDG_SHELL_XML}"
+        VERBATIM
+    )
+
+    add_custom_command(
+        OUTPUT "${LOFIBOX_XDG_SHELL_SOURCE}"
+        COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" private-code
+                "${LOFIBOX_XDG_SHELL_XML}"
+                "${LOFIBOX_XDG_SHELL_SOURCE}"
+        DEPENDS "${LOFIBOX_XDG_SHELL_XML}"
+        VERBATIM
+    )
+
+    add_custom_command(
+        OUTPUT "${LOFIBOX_XDG_DECORATION_HEADER}"
+        COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header
+                "${LOFIBOX_XDG_DECORATION_XML}"
+                "${LOFIBOX_XDG_DECORATION_HEADER}"
+        DEPENDS "${LOFIBOX_XDG_DECORATION_XML}"
+        VERBATIM
+    )
+
+    add_custom_command(
+        OUTPUT "${LOFIBOX_XDG_DECORATION_SOURCE}"
+        COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" private-code
+                "${LOFIBOX_XDG_DECORATION_XML}"
+                "${LOFIBOX_XDG_DECORATION_SOURCE}"
+        DEPENDS "${LOFIBOX_XDG_DECORATION_XML}"
+        VERBATIM
+    )
+
+    add_library(lofibox_wayland_protocol STATIC
+        "${LOFIBOX_XDG_SHELL_SOURCE}"
+        "${LOFIBOX_XDG_SHELL_HEADER}"
+        "${LOFIBOX_XDG_DECORATION_SOURCE}"
+        "${LOFIBOX_XDG_DECORATION_HEADER}"
+    )
+    target_include_directories(lofibox_wayland_protocol PUBLIC "${LOFIBOX_WAYLAND_PROTOCOL_DIR}")
+    target_link_libraries(lofibox_wayland_protocol PUBLIC PkgConfig::WAYLAND_CLIENT)
+
+    add_executable(lofibox_zero_wayland
+        src/platform/wayland/wayland_presenter.cpp
+        src/targets/wayland_main.cpp
+    )
+    set_target_properties(lofibox_zero_wayland PROPERTIES OUTPUT_NAME lofibox-wayland)
+    target_link_libraries(lofibox_zero_wayland PRIVATE
+        lofibox_zero_host_runtime
+        lofibox_zero_target_cli
+        lofibox_wayland_protocol
+        PkgConfig::WAYLAND_CLIENT
+        PkgConfig::XKBCOMMON
+    )
+    target_include_directories(lofibox_zero_wayland PRIVATE "${LOFIBOX_WAYLAND_PROTOCOL_DIR}")
+    if(TARGET lofibox_zero_tui)
+        target_link_libraries(lofibox_zero_wayland PRIVATE lofibox_zero_tui)
+        target_compile_definitions(lofibox_zero_wayland PRIVATE LOFIBOX_HAVE_TUI=1)
+    endif()
+    if(TARGET lofibox_webui)
+        target_link_libraries(lofibox_zero_wayland PRIVATE lofibox_zero_core lofibox_webui)
+        target_compile_definitions(lofibox_zero_wayland PRIVATE LOFIBOX_HAVE_WEBUI=1)
+    endif()
+    install(TARGETS lofibox_zero_wayland
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 endif()
@@ -376,13 +477,12 @@ if(LOFIBOX_BUILD_DEVICE)
     install(TARGETS lofibox_zero_device
         RUNTIME DESTINATION "${LOFIBOX_PRIVATE_LIBDIR}"
     )
-    if(NOT TARGET lofibox_zero_x11)
-        install(PROGRAMS "$<TARGET_FILE:lofibox_zero_device>"
-            DESTINATION "${CMAKE_INSTALL_BINDIR}"
-            RENAME lofibox
-        )
-    endif()
 endif()
+
+install(PROGRAMS data/lofibox-launcher
+    DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    RENAME lofibox
+)
 
 install(FILES assets/README.md
     DESTINATION "${CMAKE_INSTALL_DATADIR}/lofibox/assets"

@@ -1,0 +1,68 @@
+#!/bin/sh
+# SPDX-License-Identifier: CC0-1.0
+
+set -eu
+
+backend=${LOFIBOX_DISPLAY_BACKEND:-auto}
+private_dir=${LOFIBOX_PRIVATE_LIBDIR:-/usr/lib/lofibox}
+
+run_wayland()
+{
+    if command -v lofibox-wayland >/dev/null 2>&1; then
+        exec lofibox-wayland "$@"
+    fi
+    return 1
+}
+
+run_x11()
+{
+    if command -v lofibox-x11 >/dev/null 2>&1; then
+        exec lofibox-x11 "$@"
+    fi
+    return 1
+}
+
+run_fbdev()
+{
+    if [ -x "$private_dir/lofibox_zero_device" ]; then
+        exec "$private_dir/lofibox_zero_device" "$@"
+    fi
+    return 1
+}
+
+case "$backend" in
+    wayland|labwc)
+        run_wayland "$@" || {
+            echo "lofibox: native Wayland runtime is not installed" >&2
+            exit 127
+        }
+        ;;
+    x11|xwayland)
+        run_x11 "$@" || {
+            echo "lofibox: X11 runtime is not installed" >&2
+            exit 127
+        }
+        ;;
+    fb|fbdev|framebuffer|device)
+        run_fbdev "$@" || {
+            echo "lofibox: framebuffer runtime is not installed" >&2
+            exit 127
+        }
+        ;;
+    auto|"")
+        if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+            run_wayland "$@" || true
+        fi
+        if [ -n "${DISPLAY:-}" ]; then
+            run_x11 "$@" || true
+        fi
+        run_fbdev "$@" || {
+            echo "lofibox: no compatible display runtime is available" >&2
+            exit 127
+        }
+        ;;
+    *)
+        echo "lofibox: unsupported LOFIBOX_DISPLAY_BACKEND=$backend" >&2
+        exit 2
+        ;;
+esac

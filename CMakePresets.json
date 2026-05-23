@@ -33,6 +33,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "LOFIBOX_BUILD_DEVICE": "ON",
+        "LOFIBOX_BUILD_WAYLAND": "OFF",
         "BUILD_TESTING": "OFF"
       },
       "condition": {
@@ -50,7 +51,27 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "LOFIBOX_BUILD_DEVICE": "OFF",
+        "LOFIBOX_BUILD_WAYLAND": "OFF",
         "LOFIBOX_BUILD_X11": "ON",
+        "BUILD_TESTING": "OFF"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "linux-wayland-debug",
+      "displayName": "Linux Wayland Desktop Widget",
+      "description": "Configure the native Linux Wayland desktop-widget presentation target.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/wayland",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LOFIBOX_BUILD_DEVICE": "OFF",
+        "LOFIBOX_BUILD_X11": "OFF",
+        "LOFIBOX_BUILD_WAYLAND": "ON",
         "BUILD_TESTING": "OFF"
       },
       "condition": {
@@ -67,7 +88,8 @@
       "binaryDir": "${sourceDir}/build/test",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "LOFIBOX_BUILD_DEVICE": "OFF"
+        "LOFIBOX_BUILD_DEVICE": "OFF",
+        "LOFIBOX_BUILD_WAYLAND": "OFF"
       },
       "condition": {
         "type": "equals",
@@ -100,6 +122,14 @@
       "configurePreset": "linux-x11-debug",
       "targets": [
         "lofibox_zero_x11"
+      ]
+    },
+    {
+      "name": "linux-wayland-debug-build",
+      "displayName": "Build Linux Wayland Desktop Widget",
+      "configurePreset": "linux-wayland-debug",
+      "targets": [
+        "lofibox_zero_wayland"
       ]
     },
     {

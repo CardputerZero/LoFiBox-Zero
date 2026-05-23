@@ -17,6 +17,7 @@ RUN apt-get -o Acquire::Retries=5 update \
     desktop-file-utils \
     libegl-dev \
     libfreetype6-dev \
+    libwayland-dev \
     libx11-dev \
     libxkbcommon-dev \
     libchromaprint-tools \
@@ -24,6 +25,7 @@ RUN apt-get -o Acquire::Retries=5 update \
     python3 \
     python3-mutagen \
     pkg-config \
+    wayland-protocols \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace/LoFiBox-Zero

@@ -102,10 +102,25 @@ The APPLaunch desktop entry must start the LoFiBox APPLaunch wrapper, not the ge
 - `Exec`: `/usr/lib/lofibox/lofibox-applaunch`
 - `Icon`: `share/images/lofibox.png`
 
-The wrapper must then `exec` the installed device target:
+The wrapper must then `exec` the best installed runtime for the active display session:
 
 - wrapper path: `/usr/lib/lofibox/lofibox-applaunch`
 - device target path: `/usr/lib/lofibox/lofibox_zero_device`
+- native Wayland target: `/usr/bin/lofibox-wayland`
+- X11 target: `/usr/bin/lofibox-x11`
+
+In `auto` mode, the wrapper must prefer the native Wayland target when `WAYLAND_DISPLAY` is present, then the X11 target when `DISPLAY` is present, and only then fall back to the framebuffer device target. Explicit `LOFIBOX_DISPLAY_BACKEND` values must override that auto-detection.
+
+Cardputer Zero APPLaunch starts LoFiBox as an appliance app. In that launch profile, the wrapper must enable the LoFiBox WebUI by default while preserving explicit user overrides:
+
+1. Existing `LOFIBOX_WEBUI`
+2. Existing `LOFIBOX_WEBUI_BIND`
+3. Existing `LOFIBOX_WEBUI_PORT`
+4. Default `LOFIBOX_WEBUI=1`
+5. Default `LOFIBOX_WEBUI_BIND=0.0.0.0`
+6. Default `LOFIBOX_WEBUI_PORT=8765`
+
+This is a Cardputer APPLaunch adaptation rule, not a generic Linux desktop rule. The ordinary `lofibox` command must not silently start an HTTP service merely because it was launched from a normal desktop environment.
 
 The wrapper must preserve explicit user overrides.
 It must use these precedence rules for framebuffer selection:
@@ -166,9 +181,11 @@ The Cardputer Zero APPLaunch integration must have a regression check that cover
 
 - the APPLaunch desktop `Exec` path
 - the APPLaunch icon path and small-screen icon dimensions
+- the native Wayland display declaration
+- the Cardputer APPLaunch WebUI defaults
 - the wrapper's framebuffer precedence
 - the wrapper's keyboard-device precedence
-- the wrapper's final `exec` of `lofibox_zero_device`
+- the wrapper's final fallback `exec` of `lofibox_zero_device`
 
 Build or packaging verification should confirm that `/usr/lib/lofibox/lofibox_zero_device` and `/usr/lib/lofibox/lofibox-applaunch` are installed with executable permissions.
 

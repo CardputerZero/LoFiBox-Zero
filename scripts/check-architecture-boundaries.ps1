@@ -223,7 +223,7 @@ Get-ChildItem -Path (Join-Path $repo "src") -Recurse -File | Where-Object { Is-S
         }
 
         if ($repoPath.StartsWith("src/app/", [System.StringComparison]::Ordinal) -and -not $repoPath.Contains("_runner.")) {
-            if (Test-AnyPrefix $include @("platform/host/", "platform/device/", "platform/x11/")) {
+            if (Test-AnyPrefix $include @("platform/host/", "platform/device/", "platform/x11/", "platform/wayland/")) {
                 Add-Violation $violations $repoPath $lineNumber $include "shared app code must not include concrete platform adapters"
             }
         }
@@ -257,8 +257,8 @@ Get-ChildItem -Path (Join-Path $repo "src") -Recurse -File | Where-Object { Is-S
         }
 
         if ($repoPath.StartsWith("src/tui/", [System.StringComparison]::Ordinal)) {
-            if (Test-AnyPrefix $include @("app/app_runtime_context.h", "audio/", "metadata/", "remote/", "security/", "platform/host/", "platform/device/", "platform/x11/", "ui/pages/", "playback/playback_backend_controller.h")) {
-                Add-Violation $violations $repoPath $lineNumber $include "TUI must stay a terminal runtime projection and must not include GUI runtime, audio/metadata/remote/security internals, host/device/X11 adapters, or UI page implementations"
+            if (Test-AnyPrefix $include @("app/app_runtime_context.h", "audio/", "metadata/", "remote/", "security/", "platform/host/", "platform/device/", "platform/x11/", "platform/wayland/", "ui/pages/", "playback/playback_backend_controller.h")) {
+                Add-Violation $violations $repoPath $lineNumber $include "TUI must stay a terminal runtime projection and must not include GUI runtime, audio/metadata/remote/security internals, host/device/X11/Wayland adapters, or UI page implementations"
             }
         }
 
@@ -283,7 +283,7 @@ Get-ChildItem -Path (Join-Path $repo "src") -Recurse -File | Where-Object { Is-S
             }
         }
 
-        if ($repoPath.StartsWith("src/platform/device/", [System.StringComparison]::Ordinal) -or $repoPath.StartsWith("src/platform/x11/", [System.StringComparison]::Ordinal)) {
+        if ($repoPath.StartsWith("src/platform/device/", [System.StringComparison]::Ordinal) -or $repoPath.StartsWith("src/platform/x11/", [System.StringComparison]::Ordinal) -or $repoPath.StartsWith("src/platform/wayland/", [System.StringComparison]::Ordinal)) {
             if (Test-AnyPrefix $include @("ui/pages/", "app/lofibox_app.h", "platform/host/")) {
                 Add-Violation $violations $repoPath $lineNumber $include "presentation adapters must not depend on host runtime or concrete app/pages"
             }

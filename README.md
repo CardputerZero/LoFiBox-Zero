@@ -6,7 +6,7 @@
   <img src="docs/assets/logo.png" alt="LoFiBox Zero logo" width="120">
 </p>
 
-LoFiBox Zero is a Linux-first music player for compact keyboard-driven devices and chromeless desktop-widget sessions. It presents the same focused `320x170` player surface on the Cardputer Zero class of hardware, the Linux framebuffer device target, and the direct Linux X11 target.
+LoFiBox Zero is a Linux-first music player for compact keyboard-driven devices and chromeless desktop-widget sessions. It presents the same focused `320x170` player surface on the Cardputer Zero class of hardware, the Linux framebuffer device target, and native Linux Wayland/X11 desktop-widget targets.
 
 It is built around local library playback, durable media roots, metadata and artwork enrichment, lyrics, queue control, remote media sources, and a DSP-ready audio pipeline. The goal is a small music appliance that feels deliberate rather than a resized desktop app.
 
@@ -27,15 +27,17 @@ The screenshots show the product surface, not a mock desktop simulator. LoFiBox 
 - Queue, search, lyrics, artwork, metadata enrichment, and tag writeback services
 - Remote media profiles for Jellyfin, Emby, OpenSubsonic/Navidrome-style servers, playlists, WebDAV, DLNA/UPnP, and other governed source families
 - Runtime command surface for live playback, queue, EQ, diagnostics, and library refresh
-- Direct CLI, TUI, Linux X11, and Linux framebuffer/device targets sharing the same app semantics
+- Direct CLI, TUI, Linux Wayland, Linux X11, and Linux framebuffer/device targets sharing the same app semantics
 - Debian-oriented build, packaging, AppStream, desktop integration, and release discipline
 
 The repository intentionally keeps one product runtime path:
 
 - shared product code in `src/app` and `src/core`
-- Linux runtime adapters in `src/platform/host` and `src/platform/device`
+- Linux runtime adapters in `src/platform/host`, `src/platform/wayland`, `src/platform/x11`, and `src/platform/device`
 - a single Linux device executable: `lofibox_zero_device`
-- a direct Linux X11 desktop-widget executable: `lofibox_zero_x11`
+- a protocol-selecting launcher command: `lofibox`
+- a native Linux Wayland desktop-widget executable: `lofibox_zero_wayland` (`lofibox-wayland`)
+- a direct Linux X11 desktop-widget executable: `lofibox_zero_x11` (`lofibox-x11`)
 - a containerized Linux build environment for repeatable builds
 
 There is no SDL desktop simulator in this project. The app should be validated through the Linux device target, a real framebuffer/input environment, or a container wired to those Linux devices.
@@ -45,6 +47,8 @@ There is no SDL desktop simulator in this project. The app should be validated t
 - `src/app`: product state, pages, controllers, playback/library semantics
 - `src/core`: canvas, font, display primitives, platform-neutral utilities
 - `src/platform/host`: host services such as metadata, artwork, lyrics, audio process launch, logging, caching, and single-instance lock
+- `src/platform/wayland`: native Wayland presentation adapter for compositor-managed compact desktop sessions
+- `src/platform/x11`: X11 presentation adapter for traditional desktop-widget sessions
 - `src/platform/device`: Linux framebuffer and evdev/xkb input adapters
 - `src/targets/device_main.cpp`: Linux product entry point
 - `assets`: icons, logo, fonts, and other product assets
@@ -105,6 +109,34 @@ LOFIBOX_MEDIA_ROOT="$HOME/Music" \
 ./build/device/lofibox_zero_device --fbdev /dev/fb0 --input-dev /dev/input/event0
 ```
 
+Build the native Linux Wayland desktop-widget target:
+
+```bash
+cmake --preset linux-wayland-debug
+cmake --build --preset linux-wayland-debug-build
+```
+
+Run inside a Wayland session:
+
+```bash
+LOFIBOX_MEDIA_ROOT="$HOME/Music" \
+./build/wayland/lofibox-wayland
+```
+
+Enable the browser WebUI for direct development runs:
+
+```bash
+LOFIBOX_WEBUI=1 LOFIBOX_WEBUI_BIND=0.0.0.0 LOFIBOX_WEBUI_PORT=8765 \
+./build/wayland/lofibox-wayland
+```
+
+The Linux WebUI code is compiled by default on Linux builds. It is intentionally
+not started by the generic `lofibox`, `lofibox-wayland`, or `lofibox-x11`
+commands unless `--webui` or `LOFIBOX_WEBUI=1` is supplied. The Cardputer Zero
+APPLaunch wrapper is the appliance launch profile, so it enables WebUI by
+default and Settings shows the resulting address as `http://<device-ip>:8765`
+unless a caller overrides the bind address or port.
+
 Build the direct Linux X11 desktop-widget target:
 
 ```bash
@@ -116,7 +148,7 @@ Run:
 
 ```bash
 LOFIBOX_MEDIA_ROOT="$HOME/Music" \
-./build/x11/lofibox
+./build/x11/lofibox-x11
 ```
 
 This is a real Linux presentation target using the same app, playback, library, remote-source, metadata, DSP, persistence, and credential semantics as the device target.
